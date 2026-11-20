@@ -581,8 +581,8 @@ def sources(request: Request):
 def about(request: Request):
     return render(
         request, "about.html",
-        title=f"About {config.SITE_NAME} — independent DevSecOps intelligence",
-        description=f"What {config.SITE_NAME} is, how it is built, and its relationship to other open-source CTI projects.",
+        title=f"About Azmir Ilias — author and owner of {config.SITE_NAME}",
+        description="Azmir Ilias, based in Malaysia, is the author and owner of VulnDeck. His work spans cybersecurity, community building, collaboration and education.",
     )
 
 
