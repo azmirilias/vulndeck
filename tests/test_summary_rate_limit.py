@@ -30,8 +30,9 @@ class SummaryRateLimitTests(unittest.TestCase):
 
     @patch("app.web._ai_summary", return_value="- Summary generated")
     def test_summary_generation_is_limited_per_client(self, generate):
-        first = self.client.get("/intel/summary", params={"link": "https://intel.example/one"})
-        second = self.client.get("/intel/summary", params={"link": "https://intel.example/two"})
+        headers = {"x-real-ip": "192.0.2.254"}
+        first = self.client.get("/intel/summary", params={"link": "https://intel.example/one"}, headers=headers)
+        second = self.client.get("/intel/summary", params={"link": "https://intel.example/two"}, headers=headers)
         self.assertEqual(200, first.status_code)
         self.assertIn("Summary generated", first.text)
         self.assertEqual(429, second.status_code)
