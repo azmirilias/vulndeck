@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
-from app import db
+from app import db, web
 from app.web import app
 
 
@@ -13,6 +13,7 @@ class SummaryRateLimitTests(unittest.TestCase):
         self.tmp = TemporaryDirectory()
         self.old_db_path = db.DB_PATH
         db.DB_PATH = f"{self.tmp.name}/test.db"
+        web._summary_last.clear()
         db.init_db()
         with db.connect(write=True) as conn:
             for slug in ("one", "two"):
