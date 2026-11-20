@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="wrap page-head">
+  <p class="eyebrow">Daily rollup</p>
+  <h1>Today’s intelligence</h1>
+  <p class="lede">UTC digest for <time datetime="{{ digest_date }}">{{ digest_date }}</time>. Only items dated today are included.</p>
+</section>
+
+<section class="wrap block">
+  <div class="block-head"><h2><span class="idx mono">01</span> Newest exploited CVEs</h2><a class="more" href="/kev">All →</a></div>
+  <ul class="rank-list">
+  {% for r in latest_kev %}<li><a class="rank-cve mono" href="/cve/{{ r.cve_id }}">{{ r.cve_id }}</a><div class="rank-body"><p class="rank-name">{{ r.name }}</p><p class="rank-meta muted">{{ r.vendor }} · {{ r.product }}</p></div></li>{% else %}<li class="empty">No data.</li>{% endfor %}
+  </ul>
+</section>
+
+<section class="wrap block">
+  <div class="block-head"><h2><span class="idx mono">02</span> Recent ransomware victims</h2><a class="more" href="/ransomware">All →</a></div>
+  <ul class="rank-list">
+  {% for r in latest_rw %}<li><div class="rank-body"><p class="rank-name">{{ r.victim }}</p><p class="rank-meta muted">{{ r.group_name }} · {{ r.sector or '—' }}</p></div><span class="rank-score mono">{{ r.discovered | human_date }}</span></li>{% else %}<li class="empty">No data.</li>{% endfor %}
+  </ul>
+</section>
+
+<section class="wrap block">
+  <div class="block-head"><h2><span class="idx mono">03</span> Recent breaches</h2><a class="more" href="/breaches">All →</a></div>
+  <ul class="rank-list">
+  {% for r in latest_breach %}<li><div class="rank-body"><p class="rank-name">{{ r.title or r.name }}</p><p class="rank-meta muted">{{ r.domain or '—' }}</p></div><span class="rank-score mono">{{ r.breach_date | human_date }}</span></li>{% else %}<li class="empty">No data.</li>{% endfor %}
+  </ul>
+</section>
+
+<section class="wrap block">
+  <div class="block-head"><h2><span class="idx mono">04</span> Latest research</h2><a class="more" href="/intel">All →</a></div>
+  <div class="feed">
+  {% for a in latest_intel %}<article class="feed-item"><p class="feed-meta mono"><span>{{ a.source }}</span> <span class="muted">{{ a.published | human_date }}</span></p><h3><a href="{{ a.link }}" rel="noopener noreferrer nofollow" target="_blank">{{ a.title }}</a></h3></article>{% else %}<p class="empty">No data.</p>{% endfor %}
+  </div>
+</section>
+
+<section class="wrap block">
+  <div class="block-head"><h2><span class="idx mono">05</span> Recent PoCs</h2></div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th scope="col">CVE</th><th scope="col">Repository</th><th scope="col">Stars</th></tr></thead>
+      <tbody>
+      {% for r in latest_poc %}<tr><td class="mono"><a href="/cve/{{ r.cve_id }}">{{ r.cve_id }}</a></td><td><a href="{{ r.url }}" rel="noopener noreferrer nofollow" target="_blank">{{ r.repo }}</a></td><td class="mono">{{ r.stars }}</td></tr>{% else %}<tr><td colspan="3" class="empty">No data.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

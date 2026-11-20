@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero wrap">
+  <p class="eyebrow">Vulnerability intelligence · updated continuously</p>
+  <h1>Know what is being exploited <em>before</em> it reaches your pipeline.</h1>
+  <p class="lede">{{ SITE.SITE_DESC }}</p>
+  <div class="hero-actions">
+    <a class="btn" href="/today">Open today’s intelligence</a>
+    <a class="btn btn-ghost" href="/ransomware">Ransomware Monitor</a>
+  </div>
+  <div class="stat-row">
+    <div class="stat"><span class="stat-n mono">{{ '{:,}'.format(stats.kev) }}</span><span class="stat-l">Known exploited CVEs</span></div>
+    <div class="stat"><span class="stat-n mono">{{ '{:,}'.format(stats.kev_ransomware) }}</span><span class="stat-l">Used in ransomware</span></div>
+    <div class="stat"><span class="stat-n mono">{{ '{:,}'.format(stats.vendors) }}</span><span class="stat-l">Affected vendors</span></div>
+    <div class="stat"><span class="stat-n mono">{{ '{:,}'.format(stats.advisories) }}</span><span class="stat-l">Open-source advisories</span></div>
+  </div>
+</section>
+
+<section class="wrap block">
+  <div class="block-head">
+    <h2><span class="idx mono">01</span> Newest additions to the exploited list</h2>
+    <a class="more" href="/kev">All {{ '{:,}'.format(stats.kev) }} CVEs →</a>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th scope="col">CVE</th><th scope="col">Vendor &amp; product</th><th scope="col">Added</th><th scope="col">EPSS</th><th scope="col">Ransomware</th></tr></thead>
+      <tbody>
+      {% for r in latest %}
+        <tr>
+          <td class="mono"><a href="/cve/{{ r.cve_id }}">{{ r.cve_id }}</a></td>
+          <td><span class="vendor">{{ r.vendor }}</span> <span class="muted">{{ r.product }}</span></td>
+          <td class="mono nowrap">{{ r.date_added | human_date }}</td>
+          <td class="mono nowrap">{% if r.score is not none %}{{ r.score | pct }}{% else %}<span class="muted">—</span>{% endif %}</td>
+          <td>{% if r.ransomware_use and r.ransomware_use.startswith('Known') %}<span class="badge sev-high">known</span>{% else %}<span class="muted">—</span>{% endif %}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="5" class="empty">No data yet — run <code>python -m app.ingest</code>.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="wrap block">
+  <div class="block-head">
+    <h2><span class="idx mono">02</span> Highest exploit probability</h2>
+    <a class="more" href="/kev?sort=epss">Ranked list →</a>
+  </div>
+  <ol class="rank-list">
+    {% for r in hot %}
+    <li>
+      <a class="rank-cve mono" href="/cve/{{ r.cve_id }}">{{ r.cve_id }}</a>
+      <div class="rank-body">
+        <p class="rank-name">{{ r.name }}</p>
+        <p class="rank-meta muted">{{ r.vendor }} · {{ r.product }}</p>
+      </div>
+      <span class="rank-score mono">{{ r.score | pct }}</span>
+    </li>
+    {% else %}
+    <li class="empty">EPSS scores not ingested yet.</li>
+    {% endfor %}
+  </ol>
+</section>
+
+<section class="wrap block">
+  <div class="block-head">
+    <h2><span class="idx mono">03</span> Latest research</h2>
+    <a class="more" href="/intel">Full feed →</a>
+  </div>
+  <div class="feed">
+    {% for a in intel %}
+    <article class="feed-item">
+      <p class="feed-meta mono"><span>{{ a.source }}</span> <span class="muted">{{ a.published | human_date }}</span></p>
+      <h3><a href="{{ a.link }}" rel="noopener noreferrer nofollow" target="_blank">{{ a.title }}</a></h3>
+      {% if a.summary %}<p class="feed-sum">{{ a.summary[:220] }}{% if a.summary|length > 220 %}…{% endif %}</p>{% endif %}
+    </article>
+    {% else %}
+    <p class="empty">No articles ingested yet.</p>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="wrap block cta">
+  <div>
+    <h2>Wire it into your pipeline</h2>
+    <p class="lede">Pull the same scored list into CI gates, SBOM checks or a SOAR playbook. Every page has a JSON twin.</p>
+  </div>
+  <pre class="code mono"><code>curl {{ base }}/api/stats
+curl {{ base }}/api/cve/CVE-2026-0000</code></pre>
+</section>
+{% endblock %}

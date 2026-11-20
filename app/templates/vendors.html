@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="wrap page-head">
+  <p class="eyebrow">Attack surface by publisher</p>
+  <h1>Vendors with exploited vulnerabilities</h1>
+  <p class="lede">Ranked by number of CVEs in the CISA KEV catalog. Vendors concentrate risk: patch cadence, exposure and attacker attention all compound.</p>
+</section>
+<section class="wrap">
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th scope="col">Vendor</th><th scope="col">Exploited CVEs</th><th scope="col">Ransomware-linked</th><th scope="col">Latest addition</th></tr></thead>
+      <tbody>
+      {% for r in rows %}
+        <tr>
+          <td><a class="vendor" href="/vendors/{{ r.vendor | slug }}">{{ r.vendor }}</a></td>
+          <td class="mono">{% if r.n >= 100 %}<strong>{{ r.n }}</strong>{% else %}{{ r.n }}{% endif %}</td>
+          <td class="mono">{{ r.rw or 0 }}</td>
+          <td class="mono nowrap">{{ r.latest | human_date }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="4" class="empty">No vendors ingested yet.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block content %}
+<nav class="wrap crumbs mono" aria-label="Breadcrumb">
+  <a href="/">Home</a> <span aria-hidden="true">/</span> <a href="/kev">Exploited</a> <span aria-hidden="true">/</span> <span>{{ kev.cve_id if kev else epss.cve_id }}</span>
+</nav>
+
+<section class="wrap page-head">
+  <p class="eyebrow">
+    {% if kev %}Known exploited vulnerability{% else %}Vulnerability record{% endif %}
+    {% if kev and kev.ransomware_use and kev.ransomware_use.startswith('Known') %} · <span class="badge sev-high">ransomware use</span>{% endif %}
+  </p>
+  <h1 class="mono cve-title">{{ kev.cve_id if kev else epss.cve_id }}</h1>
+  {% if kev %}<p class="lede">{{ kev.name }}</p>{% endif %}
+</section>
+
+<section class="wrap detail-grid">
+  <div class="detail-main">
+    {% if kev %}
+    <div class="prose">
+      <h2>What happened</h2>
+      <p>{{ kev.short_desc }}</p>
+      <h2>Required action</h2>
+      <p>{{ kev.required_action }}</p>
+      {% if kev.notes %}<h2>Analyst notes</h2><p class="muted">{{ kev.notes }}</p>{% endif %}
+    </div>
+    {% endif %}
+
+    {% if advisories %}
+    <div class="prose">
+      <h2>Open-source advisories</h2>
+      <ul class="adv-list">
+        {% for a in advisories %}
+        <li>
+          <p class="feed-meta mono"><span class="badge {{ a.severity | sev_class }}">{{ a.severity or 'n/a' }}</span>
+            {% if a.cvss %}<span class="muted">CVSS {{ '%.1f' % a.cvss }}</span>{% endif %}
+            <span class="muted">{{ a.published | human_date }}</span></p>
+          <p><a href="{{ a.url }}" rel="noopener noreferrer nofollow" target="_blank">{{ a.summary }}</a></p>
+          {% if a.ecosystem %}<p class="mono muted small">{{ a.ecosystem }}</p>{% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+
+    {% if pocs %}
+    <div class="prose">
+      <h2>Public proof-of-concept repositories</h2>
+      <p class="side-note">Repository metadata comes from scheduled GitHub search. VulnDeck does not fetch or execute code; repository claims are not independently verified. Review before use.</p>
+      <ul class="adv-list">
+        {% for p in pocs %}
+        <li>
+          <p class="feed-meta mono"><span class="muted">★ {{ p.stars }}</span> <span class="muted">{{ p.published | human_date }}</span></p>
+          <p><a href="{{ p.url }}" rel="noopener noreferrer nofollow" target="_blank">{{ p.repo }}</a></p>
+          {% if p.description %}<p class="muted small">{{ p.description }}</p>{% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% else %}
+    <div class="prose">
+      <h2>Public proof-of-concept repositories</h2>
+      <p class="side-note">No matching public repository was found in the scheduled GitHub index. The index refreshes every 30 minutes; a result would be an unverified repository mention, not a safety assessment.</p>
+    </div>
+    {% endif %}
+    {% if related %}
+    <div class="prose">
+      <h2>More from {{ kev.vendor if kev else 'this vendor' }}</h2>
+      <ul class="rel-list">
+        {% for r in related %}
+        <li><a class="mono" href="/cve/{{ r.cve_id }}">{{ r.cve_id }}</a> <span class="muted">{{ r.name }}</span></li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+  </div>
+
+  <aside class="detail-side">
+    <dl class="spec">
+      <div><dt>Vendor</dt><dd>{% if kev %}<a href="/vendors/{{ kev.vendor | slug }}">{{ kev.vendor }}</a>{% else %}—{% endif %}</dd></div>
+      <div><dt>Product</dt><dd>{% if kev %}{{ kev.product }}{% else %}—{% endif %}</dd></div>
+      <div><dt>Added to KEV</dt><dd class="mono">{{ kev.date_added | human_date if kev and kev.date_added else '—' }}</dd></div>
+      <div><dt>Federal due date</dt><dd class="mono">{{ kev.due_date | human_date if kev and kev.due_date else '—' }}</dd></div>
+      <div><dt>EPSS score</dt><dd class="mono big">{{ epss.score | pct if epss else '—' }}</dd></div>
+      <div><dt>Percentile</dt><dd class="mono">{{ epss.percentile | pct if epss else '—' }}</dd></div>
+      <div><dt>Ransomware use</dt><dd>{{ kev.ransomware_use if kev else '—' }}</dd></div>
+      <div><dt>EPSS model date</dt><dd class="mono">{{ epss.updated if epss else '—' }}</dd></div>
+    </dl>
+    <p class="side-note">EPSS estimates the probability a CVE is exploited in the next 30 days. Membership of the KEV catalog means exploitation was already observed.</p>
+    <p class="side-links mono"><a href="/api/cve/{{ kev.cve_id if kev else epss.cve_id }}">JSON</a> · <a href="https://nvd.nist.gov/vuln/detail/{{ kev.cve_id if kev else epss.cve_id }}" rel="noopener nofollow" target="_blank">NVD</a> · <a href="https://www.cve.org/CVERecord?id={{ kev.cve_id if kev else epss.cve_id }}" rel="noopener nofollow" target="_blank">CVE.org</a></p>
+  </aside>
+</section>
+{% endblock %}

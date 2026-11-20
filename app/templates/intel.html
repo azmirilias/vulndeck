@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="wrap page-head">
+  <p class="eyebrow">Curated upstream research</p>
+  <h1>Threat intelligence feed</h1>
+  <p class="lede">Headlines from the teams that publish primary research. VulnDeck stores titles and links only — read the analysis at the source.</p>
+</section>
+<section class="wrap intel-grid">
+  <div class="feed">
+    {% for a in rows %}
+    <article class="feed-item">
+      <p class="feed-meta mono"><span>{{ a.source }}</span> <span class="muted">{{ a.published | human_date }}</span></p>
+      <h2 class="feed-h"><a href="{{ a.link }}" rel="noopener noreferrer nofollow" target="_blank">{{ a.title }}</a></h2>
+      {% if a.summary %}<p class="feed-sum">{{ a.summary[:240] }}{% if a.summary|length > 240 %}…{% endif %}</p>{% endif %}
+      {% if a.ai_summary %}<p class="feed-sum muted">{{ a.ai_summary }}</p>{% else %}<p class="feed-meta mono"><a href="/intel/summary?link={{ a.link | urlencode }}">Generate AI summary</a></p>{% endif %}
+      {% if iocs.get(a.link) %}<p class="feed-meta mono"><span class="muted">Mentioned indicators · unverified:</span> {% for t, v in iocs.get(a.link) %}<a href="/search?q={{ v | urlencode }}" title="{{ t }} mention">{{ v }}</a> {% endfor %}</p>{% endif %}
+      <p class="feed-meta mono"><a href="/intel/article?link={{ a.link | urlencode }}">Article details &amp; indicator context →</a></p>
+    </article>
+    {% else %}
+    <p class="empty">No articles yet.</p>
+    {% endfor %}
+  </div>
+  <aside class="intel-side">
+    <p class="footer-head">Sources in this feed</p>
+    <ul class="src-list">
+      {% for s in sources %}<li><span class="mono">{{ s.n }}</span> {{ s.source }}</li>{% endfor %}
+    </ul>
+    <p class="side-note">Add or remove feeds in <code>app/ingest.py</code>. Each source keeps its own attribution and licence.</p>
+  </aside>
+</section>
+{% endblock %}

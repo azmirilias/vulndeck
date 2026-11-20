@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="wrap page-head">
+  <p class="eyebrow">AI-assisted · verify with the publisher</p>
+  <h1>Article summary</h1>
+  <p class="lede">{{ row.source }} · {{ row.published | human_date }}</p>
+</section>
+<section class="wrap prose narrow">
+  <h2><a href="{{ row.link }}" rel="noopener noreferrer nofollow" target="_blank">{{ row.title }}</a></h2>
+  <p class="muted small">Generated from the RSS title and excerpt only. The article text is untrusted input; this summary may omit context or be wrong. Check the original source before acting.</p>
+  <div class="summary-text">{{ summary }}</div>
+  {% if cached_result %}<p class="side-note">Cached summary.</p>{% endif %}
+  <p><a href="/intel">← Back to intelligence feed</a></p>
+</section>
+{% endblock %}

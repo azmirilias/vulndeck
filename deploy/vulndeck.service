@@ -1,0 +1,28 @@
+[Unit]
+Description=VulnDeck — DevSecOps vulnerability intelligence (UAT)
+Documentation=https://github.com/azmirilias/vulndeck
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/vulndeck
+Environment=PYTHONUNBUFFERED=1
+Environment=VULNDECK_DB=/root/vulndeck/data/vulndeck.db
+Environment=VULNDECK_BASE_URL=https://vulndeck-uat.azmirilias.com
+Environment=VULNDECK_TMPDIR=/root/vulndeck/data/tmp
+ExecStart=/root/vulndeck/.venv/bin/python -m app.main 8090
+Restart=always
+RestartSec=5
+# keep it small on a shared box
+MemoryMax=192M
+MemoryHigh=160M
+CPUQuota=60%
+NoNewPrivileges=true
+PrivateTmp=true
+StandardOutput=append:/root/vulndeck/vulndeck-out.log
+StandardError=append:/root/vulndeck/vulndeck-err.log
+
+[Install]
+WantedBy=multi-user.target

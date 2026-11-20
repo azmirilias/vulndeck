@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="wrap page-head">
+  <p class="eyebrow">CISA KEV catalog · cross-referenced with EPSS</p>
+  <h1>Known exploited vulnerabilities</h1>
+  <p class="lede">{{ '{:,}'.format(total) }} CVEs with confirmed in-the-wild exploitation{% if vendor %} for <strong>{{ vendor }}</strong>{% endif %}. Sorted by {{ 'exploit probability' if sort == 'epss' else 'date added to the catalog' }}.</p>
+  <div class="filter-row">
+    <a class="chip{% if not rw %} chip-on{% endif %}" href="/kev{% if vendor %}?vendor={{ vendor }}{% endif %}">All</a>
+    <a class="chip{% if rw == 'known' %} chip-on{% endif %}" href="/kev?rw=known{% if vendor %}&amp;vendor={{ vendor }}{% endif %}">Ransomware-linked</a>
+    <a class="chip{% if sort == 'epss' %} chip-on{% endif %}" href="/kev?sort=epss{% if vendor %}&amp;vendor={{ vendor }}{% endif %}">Highest EPSS</a>
+    {% if vendor %}<a class="chip" href="/kev">Clear vendor</a>{% endif %}
+  </div>
+</section>
+
+<section class="wrap">
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th scope="col">CVE</th><th scope="col">Vendor &amp; product</th><th scope="col">Vulnerability</th><th scope="col">Added</th><th scope="col">Due</th><th scope="col">EPSS</th></tr></thead>
+      <tbody>
+      {% for r in rows %}
+        <tr>
+          <td class="mono nowrap"><a href="/cve/{{ r.cve_id }}">{{ r.cve_id }}</a></td>
+          <td><a class="vendor" href="/vendors/{{ r.vendor | slug }}">{{ r.vendor }}</a> <span class="muted">{{ r.product }}</span></td>
+          <td class="cell-title">{{ r.name }}</td>
+          <td class="mono nowrap">{{ r.date_added | human_date }}</td>
+          <td class="mono nowrap">{{ r.due_date | human_date }}</td>
+          <td class="mono nowrap">{% if r.score is not none %}{{ r.score | pct }}{% else %}<span class="muted">—</span>{% endif %}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if pages > 1 %}
+  <nav class="pagination" aria-label="Pagination">
+    {% set qs = ('&vendor=' ~ vendor if vendor else '') ~ ('&rw=' ~ rw if rw else '') ~ ('&sort=' ~ sort if sort == 'epss' else '') %}
+    {% if page > 1 %}<a href="/kev?page={{ page - 1 }}{{ qs }}">← Previous</a>{% else %}<span class="muted">← Previous</span>{% endif %}
+    <span class="mono">page {{ page }} / {{ pages }}</span>
+    {% if page < pages %}<a href="/kev?page={{ page + 1 }}{{ qs }}">Next →</a>{% else %}<span class="muted">Next →</span>{% endif %}
+  </nav>
+  {% endif %}
+</section>
+{% endblock %}

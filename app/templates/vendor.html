@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block content %}
+<nav class="wrap crumbs mono" aria-label="Breadcrumb">
+  <a href="/">Home</a> <span aria-hidden="true">/</span> <a href="/vendors">Vendors</a> <span aria-hidden="true">/</span> <span>{{ vendor }}</span>
+</nav>
+<section class="wrap page-head">
+  <p class="eyebrow">Vendor dossier</p>
+  <h1>{{ vendor }}</h1>
+  <p class="lede">{{ rows | length }} exploited vulnerabilit{{ 'y' if rows|length == 1 else 'ies' }} recorded{% if rows %} — most recent {{ rows[0].date_added | human_date }}{% endif %}.</p>
+</section>
+<section class="wrap">
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th scope="col">CVE</th><th scope="col">Product</th><th scope="col">Vulnerability</th><th scope="col">Added</th><th scope="col">EPSS</th></tr></thead>
+      <tbody>
+      {% for r in rows %}
+        <tr>
+          <td class="mono nowrap"><a href="/cve/{{ r.cve_id }}">{{ r.cve_id }}</a></td>
+          <td>{{ r.product }}</td>
+          <td class="cell-title">{{ r.name }}</td>
+          <td class="mono nowrap">{{ r.date_added | human_date }}</td>
+          <td class="mono nowrap">{% if r.score is not none %}{{ r.score | pct }}{% else %}<span class="muted">—</span>{% endif %}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="wrap page-head">
+  <p class="eyebrow">HIBP metadata + publisher reporting</p>
+  <h1>Breach Watcher</h1>
+  <p class="lede">{{ '{:,}'.format(total) }} breach metadata records from Have I Been Pwned. DailyDarkWeb RSS claims are listed separately and are not independently verified. No leaked records, credentials or breach dumps are collected.</p>
+</section>
+
+<section class="wrap block">
+  <div class="block-head"><h2><span class="idx mono">01</span> HIBP breach metadata</h2></div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th scope="col">Breach</th><th scope="col">Domain</th><th scope="col">Date</th><th scope="col">Records</th><th scope="col">Data classes</th></tr></thead>
+      <tbody>
+      {% for r in rows %}
+        <tr>
+          <td><strong>{{ r.title or r.name }}</strong></td>
+          <td class="mono">{{ r.domain or '—' }}</td>
+          <td class="mono nowrap">{{ r.breach_date | human_date }}</td>
+          <td class="mono nowrap">{% if r.pwn_count %}{{ '{:,}'.format(r.pwn_count) }}{% else %}—{% endif %}</td>
+          <td class="muted">{{ r.data_classes or '—' }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="5" class="empty">No HIBP metadata available yet.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="side-note">HIBP fields are publisher-provided metadata, not a copy of the exposed records.</p>
+</section>
+
+<section class="wrap block">
+  <div class="block-head"><h2><span class="idx mono">02</span> Reported breach claims</h2></div>
+  <p class="side-note">These are news/RSS claims from DailyDarkWeb, not confirmed incidents. Follow the publisher link and verify independently.</p>
+  <div class="feed">
+    {% for r in reports %}
+    <article class="feed-item">
+      <p class="feed-meta mono"><span>{{ r.source }}</span> <span class="muted">{{ r.published | human_date }}</span> <span class="badge sev-mod">unverified report</span></p>
+      <h3><a href="{{ r.link }}" rel="noopener noreferrer nofollow" target="_blank">{{ r.title }}</a></h3>
+      {% if r.summary %}<p class="feed-sum">{{ r.summary[:240] }}{% if r.summary|length > 240 %}…{% endif %}</p>{% endif %}
+    </article>
+    {% else %}
+    <p class="empty">No DailyDarkWeb feed items ingested yet.</p>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

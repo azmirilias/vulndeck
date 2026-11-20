@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="wrap page-head">
+  <p class="eyebrow">MISP Galaxy threat actors</p>
+  <h1>Threat actors</h1>
+  <p class="lede">{{ '{:,}'.format(rows|length) }} actor profiles.</p>
+  <form class="search" action="/actors" method="get" role="search" style="margin-top:1rem">
+    <input name="q" type="search" placeholder="actor name, alias, description" value="{{ term or '' }}">
+    <button type="submit">Search</button>
+  </form>
+</section>
+
+<section class="wrap">
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th scope="col">Actor</th><th scope="col">Country</th><th scope="col">Motivation</th><th scope="col">Aliases</th></tr></thead>
+      <tbody>
+      {% for r in rows %}
+        <tr>
+          <td><a href="/actors/{{ r.slug }}">{{ r.name }}</a></td>
+          <td class="mono">{{ r.country or '—' }}</td>
+          <td>{{ r.motivation or '—' }}</td>
+          <td class="muted">{{ r.aliases or '—' }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="4" class="empty">No data yet — run ingest.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

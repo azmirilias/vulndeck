@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="wrap page-head">
+  <p class="eyebrow">About</p>
+  <h1>A small, honest instrument for vulnerability decisions.</h1>
+  <p class="lede">{{ SITE.SITE_NAME }} answers three questions fast: what is being exploited right now, how likely is the rest to be exploited, and which of my dependencies are affected.</p>
+</section>
+
+<section class="wrap prose narrow">
+  <h2>Design constraints</h2>
+  <p>This is a single-process Python service with a SQLite database, server-rendered HTML and one small stylesheet. No JavaScript framework, no client-side data fetching, no third-party analytics, no external font requests. Pages are complete HTML on first byte, which is good for readers, good for search engines and cheap on a 1&nbsp;GB VPS.</p>
+
+  <h2>Where the data comes from</h2>
+  <p>Only public, machine-readable sources with terms that permit reuse: CISA KEV, EPSS, the GitHub Advisory Database, CVE.org, NVD and publisher RSS feeds. Every connector is one function in <code>app/ingest.py</code>, and every run is logged publicly on the <a href="/sources">sources page</a>.</p>
+
+  <h2>Scoring, stated plainly</h2>
+  <p>CVSS describes severity, not urgency. VulnDeck therefore leads with two signals that describe reality: KEV membership (exploitation observed) and EPSS (probability of exploitation in the next 30 days). A CVSS 9.8 with no exploitation activity is not the same operational problem as a CVSS 7.5 that ransomware crews are already using.</p>
+
+  <h2>Independence &amp; provenance</h2>
+  <p>{{ SITE.SITE_NAME }} is an independent project written from scratch: no code, markup, styling, database schema or copy was taken from another threat-intelligence product. It is not a fork, mirror or derivative of MANTIS, OpenCTI, MISP, IntelOwl or any other workbench, and it claims no affiliation with their authors.</p>
+  <p>Functional ideas are not copyrightable, and the interfaces it reads from (STIX-shaped IOC concepts, CVE IDs, CVSS, EPSS, KEV) are open standards. Where a design decision follows an existing open-source project's published pattern, that project is credited on the <a href="/sources">sources</a> page. The source code of this project is MIT licensed; the upstream data remains the property of its publishers.</p>
+
+  <h2>Contact</h2>
+  <p>Security reports: <a href="mailto:{{ SITE.CONTACT_EMAIL }}">{{ SITE.CONTACT_EMAIL }}</a> · <a href="/.well-known/security.txt">security.txt</a><br>
+  Source code: <a href="{{ SITE.GITHUB_URL }}" rel="noopener">{{ SITE.GITHUB_URL }}</a></p>
+</section>
+{% endblock %}

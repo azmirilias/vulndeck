@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="{{ SITE.SITE_LANG }}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ title }}</title>
+<meta name="description" content="{{ description }}">
+<link rel="canonical" href="{{ canonical }}">
+{% if noindex %}
+<meta name="robots" content="noindex, follow">
+{% else %}
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
+{% endif %}
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="{{ SITE.SITE_NAME }}">
+<meta property="og:title" content="{{ title }}">
+<meta property="og:description" content="{{ description }}">
+<meta property="og:url" content="{{ canonical }}">
+<meta property="og:locale" content="en_GB">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{ title }}">
+<meta name="twitter:description" content="{{ description }}">
+<meta name="theme-color" content="#FBFAF7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0E1013" media="(prefers-color-scheme: dark)">
+<meta name="author" content="{{ SITE.ORG_NAME }}">
+<link rel="alternate" type="application/rss+xml" title="{{ SITE.SITE_NAME }} — new exploited CVEs" href="{{ base }}/feed.xml">
+{% if path == '/ransomware' %}<link rel="alternate" type="application/rss+xml" title="{{ SITE.SITE_NAME }} — reported ransomware disclosures" href="{{ base }}/ransomware/feed.xml">{% endif %}
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%2314171A'/%3E%3Cpath d='M8 22V10l8 6 8-6v12' stroke='%23FF7A45' stroke-width='2.5' fill='none' stroke-linejoin='miter'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/static/style.css?v=2">
+{% if ld %}<script type="application/ld+json">{{ ld | safe }}</script>{% endif %}
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="brand" href="/" aria-label="{{ SITE.SITE_NAME }} home">
+      <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+        <path d="M6 24V8l10 7.5L26 8v16" fill="none" stroke="currentColor" stroke-width="2.6"/>
+      </svg>
+      <span class="brand-name">{{ SITE.SITE_NAME }}</span>
+    </a>
+    <nav class="nav" aria-label="Primary">
+      {% for href, label in NAV %}
+      <a href="{{ href }}"{% if path == href or (path.startswith(href) and href != '/') %} aria-current="page"{% endif %}>{{ label }}</a>
+      {% endfor %}
+    </nav>
+    <form class="search" action="/search" method="get" role="search">
+      <label class="sr" for="q">Search CVEs, vendors, advisories</label>
+      <input id="q" name="q" type="search" placeholder="CVE-2026-…  vendor  keyword" autocomplete="off" spellcheck="false">
+      <button type="submit" aria-label="Search">Search</button>
+    </form>
+  </div>
+</header>
+
+<main id="main">
+{% block content %}{% endblock %}
+</main>
+
+<footer class="site-footer">
+  <div class="wrap footer-grid">
+    <div>
+      <p class="footer-brand">{{ SITE.SITE_NAME }}</p>
+      <p class="footer-note">{{ SITE.SITE_TAGLINE }}. Server-rendered, single-process, no trackers.</p>
+    </div>
+    <div>
+      <p class="footer-head">Explore</p>
+      <ul>
+        <li><a href="/kev">Exploited vulnerabilities</a></li>
+        <li><a href="/vendors">Vendors</a></li>
+        <li><a href="/advisories">Advisories</a></li>
+        <li><a href="/intel">Intel feed</a></li>
+        <li><a href="/ransomware">Ransomware monitor</a></li>
+        <li><a href="/breaches">Breach Watcher</a></li>
+        <li><a href="/actors">Threat actors</a></li>
+        <li><a href="/malware">Malware profiles</a></li>
+        <li><a href="/today">Today’s intelligence</a></li>
+      </ul>
+    </div>
+    <div>
+      <p class="footer-head">Data &amp; trust</p>
+      <ul>
+        <li><a href="/sources">Sources &amp; licences</a></li>
+        <li><a href="/about">About &amp; provenance</a></li>
+        <li><a href="/feed.xml">RSS</a></li>
+        <li><a href="/api/stats">Public API</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="wrap footer-base">
+    <p>© {{ YEAR }} {{ SITE.ORG_NAME }}. Source code MIT licensed. Upstream data remains the property of its publishers.</p>
+    <p class="mono">last ingest {{ last_ingest or 'pending' }}</p>
+  </div>
+</footer>
+</body>
+</html>

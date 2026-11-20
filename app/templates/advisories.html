@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="wrap page-head">
+  <p class="eyebrow">Open-source dependency advisories</p>
+  <h1>Package security advisories</h1>
+  <p class="lede">{{ '{:,}'.format(total) }} advisories mapped to CVEs, ecosystems and CVSS severity — the data your SBOM gate should be reading.</p>
+  <div class="filter-row">
+    <a class="chip{% if not severity %} chip-on{% endif %}" href="/advisories">All</a>
+    <a class="chip{% if severity == 'critical' %} chip-on{% endif %}" href="/advisories?severity=critical">Critical</a>
+    <a class="chip{% if severity == 'high' %} chip-on{% endif %}" href="/advisories?severity=high">High</a>
+    <a class="chip{% if severity == 'moderate' %} chip-on{% endif %}" href="/advisories?severity=moderate">Moderate</a>
+  </div>
+</section>
+<section class="wrap">
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th scope="col">Advisory</th><th scope="col">Summary</th><th scope="col">Severity</th><th scope="col">Ecosystem</th><th scope="col">Published</th></tr></thead>
+      <tbody>
+      {% for r in rows %}
+        <tr>
+          <td class="mono nowrap"><a href="{{ r.url }}" rel="noopener noreferrer nofollow" target="_blank">{{ r.id }}</a></td>
+          <td class="cell-title">{% if r.cve_id %}<a class="mono small" href="/cve/{{ r.cve_id }}">{{ r.cve_id }}</a> {% endif %}{{ r.summary }}</td>
+          <td><span class="badge {{ r.severity | sev_class }}">{{ r.severity or 'n/a' }}</span>{% if r.cvss %} <span class="mono muted small">{{ '%.1f' % r.cvss }}</span>{% endif %}</td>
+          <td class="mono small muted">{{ r.ecosystem or '—' }}</td>
+          <td class="mono nowrap">{{ r.published | human_date }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if pages > 1 %}
+  <nav class="pagination" aria-label="Pagination">
+    {% set qs = ('&severity=' ~ severity if severity else '') %}
+    {% if page > 1 %}<a href="/advisories?page={{ page - 1 }}{{ qs }}">← Previous</a>{% else %}<span class="muted">← Previous</span>{% endif %}
+    <span class="mono">page {{ page }} / {{ pages }}</span>
+    {% if page < pages %}<a href="/advisories?page={{ page + 1 }}{{ qs }}">Next →</a>{% else %}<span class="muted">Next →</span>{% endif %}
+  </nav>
+  {% endif %}
+</section>
+{% endblock %}

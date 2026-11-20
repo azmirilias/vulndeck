@@ -1,0 +1,18 @@
+[Unit]
+Description=VulnDeck data ingest (free feeds, no token)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/root/vulndeck
+Environment=PYTHONUNBUFFERED=1
+Environment=VULNDECK_DB=/root/vulndeck/data/vulndeck.db
+Environment=VULNDECK_TMPDIR=/root/vulndeck/data/tmp
+ExecStart=/root/vulndeck/.venv/bin/python -m app.ingest
+MemoryMax=256M
+CPUQuota=80%
+Nice=10
+StandardOutput=append:/root/vulndeck/vulndeck-ingest.log
+StandardError=append:/root/vulndeck/vulndeck-ingest.log

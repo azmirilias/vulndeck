@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="wrap page-head">
+  <p class="eyebrow">Radical transparency</p>
+  <h1>Data sources &amp; licences</h1>
+  <p class="lede">VulnDeck aggregates only public data that its publishers offer for reuse. Nothing here is scraped from behind a login, a paywall or a CAPTCHA.</p>
+</section>
+
+<section class="wrap">
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th scope="col">Source</th><th scope="col">What it provides</th><th scope="col">Access</th><th scope="col">Terms</th></tr></thead>
+      <tbody>
+        <tr><td class="vendor">CISA KEV</td><td>Confirmed in-the-wild exploited CVEs, remediation due dates, ransomware flag</td><td class="mono small">JSON feed, no key</td><td class="small">US Government work, public domain</td></tr>
+        <tr><td class="vendor">EPSS (FIRST / Empirical Security)</td><td>Probability a CVE is exploited in the next 30 days</td><td class="mono small">daily CSV.gz, no key</td><td class="small">Free for use with attribution</td></tr>
+        <tr><td class="vendor">GitHub Advisory Database</td><td>Open-source package advisories, CVSS, ecosystem mapping</td><td class="mono small">REST, 60 req/h anonymous</td><td class="small">CC BY 4.0</td></tr>
+        <tr><td class="vendor">CVE.org / MITRE</td><td>Authoritative CVE records (CNA-published)</td><td class="mono small">REST, no key</td><td class="small">CVE Terms of Use</td></tr>
+        <tr><td class="vendor">NVD (NIST)</td><td>CVSS vectors, CPE configuration data</td><td class="mono small">REST, key recommended</td><td class="small">Public domain</td></tr>
+        <tr><td class="vendor">Vendor &amp; CERT RSS</td><td>Primary research from CISA, Unit 42, Talos, Securelist, ESET, DFIR Report, SANS ISC, CERT-FR, NCSC UK</td><td class="mono small">RSS/Atom</td><td class="small">Brief publisher excerpts and links only; sources retain all rights</td></tr>
+        <tr><td class="vendor">Ransomware.live</td><td>Public leak-site victim, group, sector and discovery-time claims; originals linked</td><td class="mono small">RSS, no key</td><td class="small">Unverified claims; metadata only, never republished as confirmed incidents</td></tr>
+        <tr><td class="vendor">Have I Been Pwned (HIBP)</td><td>Breach names, domains, dates, exposed-data categories and aggregate counts</td><td class="mono small">Public breach metadata API</td><td class="small">Publisher metadata only; no exposed records, credentials or breach dumps</td></tr>
+        <tr><td class="vendor">DailyDarkWeb</td><td>Reported breach/access-sale headlines and short RSS excerpts</td><td class="mono small">RSS, no key</td><td class="small">Claims are labelled unverified; publisher retains rights</td></tr>
+        <tr><td class="vendor">MISP Galaxy / MITRE ATT&amp;CK clusters</td><td>Threat-actor, malware and ransomware reference profiles</td><td class="mono small">Public JSON from GitHub</td><td class="small">CC0 1.0 or BSD-style terms in the upstream repo; preserve notices and cluster references</td></tr>
+        <tr><td class="vendor">GitHub repository search</td><td>Public repositories mentioning CVE IDs, stars and update dates</td><td class="mono small">Public search API; token optional</td><td class="small">Repository metadata and links only; no code is downloaded or executed</td></tr>
+        <tr><td class="vendor">OpenCode Go</td><td>On-request summaries of publisher RSS title + excerpt</td><td class="mono small">Configured OpenCode model</td><td class="small">Generated text may be wrong; verify at the publisher. Calls are rate-limited and cached.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="wrap block">
+  <div class="block-head"><h2><span class="idx mono">log</span> Ingest runs</h2></div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th scope="col">When (UTC)</th><th scope="col">Source</th><th scope="col">Rows</th><th scope="col">Status</th><th scope="col">Detail</th></tr></thead>
+      <tbody>
+      {% for r in logs %}
+        <tr>
+          <td class="mono nowrap">{{ r.ts }}</td>
+          <td class="mono">{{ r.source }}</td>
+          <td class="mono">{{ r.rows }}</td>
+          <td><span class="badge {{ 'sev-low' if r.status == 'ok' else 'sev-high' }}">{{ r.status }}</span></td>
+          <td class="small muted cell-title">{{ r.detail or '—' }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="5" class="empty">No ingest runs recorded.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="wrap block prose narrow">
+  <h2>What is deliberately excluded</h2>
+  <ul>
+    <li>Leaked or scraped data: no breach dumps, no stealer logs, no combolists.</li>
+    <li>Sources whose terms forbid redistribution (most commercial CTI APIs, Censys legacy search, Vulners).</li>
+    <li>Feeds that now require an API key before returning any data — abuse.ch moved its public downloads behind an auth key, so those feeds are only used where a free key is provisioned explicitly.</li>
+    <li>Anything requiring bypassing a bot wall. If a publisher closes access, the connector is disabled rather than worked around.</li>
+  </ul>
+</section>
+{% endblock %}

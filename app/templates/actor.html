@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="wrap page-head">
+  <p class="eyebrow">Threat actor profile</p>
+  <h1>{{ row.name }}</h1>
+  <p class="lede">{% if row.country %}Country: {{ row.country }}.{% endif %} {% if row.motivation %}Motivation: {{ row.motivation }}.{% endif %}</p>
+</section>
+<section class="wrap">
+  {% if row.aliases %}<p><strong>Aliases:</strong> {{ row.aliases }}</p>{% endif %}
+  {% if row.description %}<p>{{ row.description }}</p>{% endif %}
+  {% if row.refs %}
+  <p class="footer-head">References</p>
+  <ul>
+    {% for ref in row.refs|fromjson %}<li><a href="{{ ref }}" rel="noopener noreferrer nofollow" target="_blank">{{ ref }}</a></li>{% endfor %}
+  </ul>
+  {% endif %}
+</section>
+{% endblock %}

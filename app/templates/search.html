@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="wrap page-head">
+  <p class="eyebrow">Search</p>
+  <h1>{% if term %}Results for “{{ term }}”{% else %}Search the dataset{% endif %}</h1>
+  <p class="lede">Query a CVE ID, a vendor, a product, a keyword or an indicator mentioned in a publisher feed. Indicator mentions are leads, not reputation verdicts.</p>
+</section>
+
+{% if term %}
+<section class="wrap block">
+  <div class="block-head"><h2><span class="idx mono">01</span> Exploited CVEs <span class="muted mono">{{ cves|length }}</span></h2></div>
+  {% if cves %}
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th scope="col">CVE</th><th scope="col">Vendor &amp; product</th><th scope="col">Added</th><th scope="col">EPSS</th></tr></thead>
+      <tbody>
+      {% for r in cves %}
+        <tr>
+          <td class="mono nowrap"><a href="/cve/{{ r.cve_id }}">{{ r.cve_id }}</a></td>
+          <td><span class="vendor">{{ r.vendor }}</span> <span class="muted">{{ r.product }}</span> — {{ r.name }}</td>
+          <td class="mono nowrap">{{ r.date_added | human_date }}</td>
+          <td class="mono nowrap">{{ r.score | pct }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}<p class="empty">No matching CVEs.</p>{% endif %}
+</section>
+
+<section class="wrap block">
+  <div class="block-head"><h2><span class="idx mono">02</span> Advisories <span class="muted mono">{{ advs|length }}</span></h2></div>
+  {% if advs %}
+  <ul class="rel-list">
+    {% for a in advs %}<li><a class="mono small" href="{{ a.url }}" rel="noopener nofollow" target="_blank">{{ a.id }}</a> <span class="badge {{ a.severity | sev_class }}">{{ a.severity or 'n/a' }}</span> {{ a.summary }}</li>{% endfor %}
+  </ul>
+  {% else %}<p class="empty">No matching advisories.</p>{% endif %}
+</section>
+
+<section class="wrap block">
+  <div class="block-head"><h2><span class="idx mono">03</span> Intel <span class="muted mono">{{ arts|length }}</span></h2></div>
+  {% if arts %}
+  <ul class="rel-list">
+    {% for a in arts %}<li><span class="mono small muted">{{ a.source }}</span> <a href="{{ a.link }}" rel="noopener nofollow" target="_blank">{{ a.title }}</a></li>{% endfor %}
+  </ul>
+  {% else %}<p class="empty">No matching articles.</p>{% endif %}
+</section>
+{% endif %}
+{% endblock %}

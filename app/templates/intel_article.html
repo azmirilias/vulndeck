@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="wrap page-head">
+  <p class="eyebrow">{{ row.source }} · publisher feed item</p>
+  <h1>{{ row.title }}</h1>
+  <p class="lede">Published {{ row.published | human_date }} · <a href="{{ row.link }}" rel="noopener noreferrer nofollow" target="_blank">Read original publisher page →</a></p>
+</section>
+<section class="wrap prose narrow">
+  <h2>Publisher excerpt</h2>
+  <p>{{ row.summary or 'No excerpt was provided in the feed.' }}</p>
+  <h2>Indicator mentions · unverified</h2>
+  <p class="side-note">These are text matches from the RSS title/excerpt, not confirmed indicators or reputation verdicts. Verify context at the original source before acting.</p>
+  {% if indicators %}
+  <ul class="indicator-list">
+    {% for i in indicators %}
+    <li><span class="badge sev-none">{{ i.ioc_type }}</span> <a class="mono" href="/search?q={{ i.ioc_value | urlencode }}">{{ i.ioc_value }}</a></li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="empty">No CVE, domain or public-IP mentions extracted from this feed excerpt.</p>
+  {% endif %}
+  <p><a class="btn" href="/intel/summary?link={{ row.link | urlencode }}">Generate AI summary</a></p>
+  <p><a href="/intel">← Back to intelligence feed</a></p>
+</section>
+{% endblock %}
