@@ -156,6 +156,14 @@ _summary_last: dict[str, float] = {}
 _SUMMARY_COOLDOWN = 30
 
 
+def _summary_retry_after(previous: float | None, now: float) -> int:
+    if previous is None:
+        return 0
+    import math
+
+    return max(0, math.ceil(_SUMMARY_COOLDOWN - (now - previous)))
+
+
 def _article_summary(row: dict, request: Request) -> tuple[str, bool]:
     if row.get("ai_summary"):
         return row["ai_summary"], True
@@ -163,9 +171,9 @@ def _article_summary(row: dict, request: Request) -> tuple[str, bool]:
     client_ip = request.headers.get("x-real-ip") or (request.client.host if request.client else "unknown")
     now = time.monotonic()
     with _summary_lock:
-        previous = _summary_last.get(client_ip, 0.0)
-        if now - previous < _SUMMARY_COOLDOWN:
-            retry_after = max(1, int(_SUMMARY_COOLDOWN - (now - previous)))
+        previous = _summary_last.get(client_ip)
+        retry_after = _summary_retry_after(previous, now)
+        if retry_after:
             raise HTTPException(429, "AI summary rate limit; retry later.", headers={"Retry-After": str(retry_after)})
         _summary_last[client_ip] = now
         if len(_summary_last) > 500:
