@@ -82,11 +82,14 @@ Before switching the live VPS, create this DNS record at the domain provider and
 vulndeck.azmirilias.com  A  72.62.198.145
 ```
 
-Verify DNS first (`dig +short vulndeck.azmirilias.com A` must return `72.62.198.145`), then obtain a trusted certificate and install the production config:
+Verify DNS first (`dig +short vulndeck.azmirilias.com A` must return `72.62.198.145`), then obtain a trusted certificate with the temporary ACME vhost and install the production config:
 
 ```bash
-sudo certbot certonly --nginx --non-interactive --agree-tos \
-  -m security@azmirilias.com -d vulndeck.azmirilias.com
+sudo cp deploy/vulndeck-acme-bootstrap.conf /etc/nginx/sites-available/vulndeck-acme-bootstrap.conf
+sudo ln -sfn /etc/nginx/sites-available/vulndeck-acme-bootstrap.conf /etc/nginx/sites-enabled/vulndeck-acme-bootstrap.conf
+sudo nginx -t && sudo systemctl reload nginx
+sudo certbot certonly --webroot -w /var/www/html --non-interactive --agree-tos -m security@azmirilias.com -d vulndeck.azmirilias.com
+sudo rm /etc/nginx/sites-enabled/vulndeck-acme-bootstrap.conf
 
 sudo cp deploy/vulndeck.service /etc/systemd/system/
 sudo cp deploy/vulndeck-ingest.service deploy/vulndeck-ingest.timer /etc/systemd/system/
