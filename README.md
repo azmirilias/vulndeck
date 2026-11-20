@@ -72,31 +72,33 @@ tests/            smoke tests against a temporary database
 
 Full detail and exclusions: `/sources` in the app, and [PROVENANCE.md](PROVENANCE.md).
 
-## Deployment (as run on this VPS)
+## Production deployment
 
-The app runs from a local virtualenv, binds `127.0.0.1:8090`, and nginx terminates TLS.
+Production hostname: `https://vulndeck.azmirilias.com`.
+
+Before switching the live VPS, create this DNS record at the domain provider and wait for it to resolve:
+
+```text
+vulndeck.azmirilias.com  A  72.62.198.145
+```
+
+Verify DNS first (`dig +short vulndeck.azmirilias.com A` must return `72.62.198.145`), then obtain a trusted certificate and install the production config:
 
 ```bash
-python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+sudo certbot certonly --nginx --non-interactive --agree-tos \
+  -m security@azmirilias.com -d vulndeck.azmirilias.com
 
 sudo cp deploy/vulndeck.service /etc/systemd/system/
 sudo cp deploy/vulndeck-ingest.service deploy/vulndeck-ingest.timer /etc/systemd/system/
 sudo cp deploy/vulndeck-rate-zone.conf /etc/nginx/conf.d/vulndeck-zone.conf
+sudo cp deploy/nginx-vulndeck.conf /etc/nginx/sites-available/vulndeck.conf
+sudo ln -sfn /etc/nginx/sites-available/vulndeck.conf /etc/nginx/sites-enabled/vulndeck.conf
 sudo systemctl daemon-reload
-sudo systemctl enable --now vulndeck vulndeck-ingest.timer
-
-sudo cp deploy/nginx-vulndeck.conf /etc/nginx/sites-available/vulndeck
-sudo ln -sfn /etc/nginx/sites-available/vulndeck /etc/nginx/sites-enabled/vulndeck
-sudo nginx -t && sudo systemctl reload nginx
+sudo nginx -t && sudo systemctl restart vulndeck && sudo systemctl reload nginx
+sudo systemctl enable --now vulndeck-ingest.timer
 ```
 
-UAT: `https://vulndeck-uat.azmirilias.com` (A record to `72.62.198.145`, Let's Encrypt TLS).
-The host sends `X-Robots-Tag: noindex, nofollow`; keep that on staging. The app binds
-`127.0.0.1:8090`, with a 192 MB service memory cap. The former sslip.io UAT address redirects
-to this hostname.
-
-Data refresh: `vulndeck-ingest.timer` re-runs `app.ingest` every 30 minutes. Temporary ingest
-files are kept under `data/tmp`, not the system temp directory.
+Do not install the production nginx file until the DNS record and certificate both exist. Data refresh runs every 30 minutes; temporary ingest files are kept under `data/tmp`.
 
 ## Licence
 

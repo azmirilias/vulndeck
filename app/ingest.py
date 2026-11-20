@@ -29,7 +29,7 @@ import httpx
 
 from . import db
 
-UA = "VulnDeck/1.0 (+https://vulndeck-uat.azmirilias.com; security research aggregator)"
+UA = "VulnDeck/1.0 (+https://vulndeck.azmirilias.com; security research aggregator)"
 TIMEOUT = httpx.Timeout(60.0, connect=15.0)
 
 KEV_URL = "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"

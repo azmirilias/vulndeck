@@ -12,7 +12,7 @@ SITE_DESC = (
     "for DevSecOps and security engineering teams."
 )
 SITE_LANG = "en"
-BASE_URL = os.environ.get("VULNDECK_BASE_URL", "https://vulndeck-uat.azmirilias.com").rstrip("/")
+BASE_URL = os.environ.get("VULNDECK_BASE_URL", "https://vulndeck.azmirilias.com").rstrip("/")
 CONTACT_EMAIL = os.environ.get("VULNDECK_CONTACT", "security@azmirilias.com")
 GITHUB_URL = os.environ.get("VULNDECK_GITHUB", "https://github.com/azmirilias/vulndeck")
 ORG_NAME = "Azmir Ilias"

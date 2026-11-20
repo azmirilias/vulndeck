@@ -1,5 +1,5 @@
 [Unit]
-Description=VulnDeck — DevSecOps vulnerability intelligence (UAT)
+Description=VulnDeck — DevSecOps vulnerability intelligence
 Documentation=https://github.com/azmirilias/vulndeck
 After=network-online.target
 Wants=network-online.target
@@ -10,7 +10,7 @@ User=root
 WorkingDirectory=/root/vulndeck
 Environment=PYTHONUNBUFFERED=1
 Environment=VULNDECK_DB=/root/vulndeck/data/vulndeck.db
-Environment=VULNDECK_BASE_URL=https://vulndeck-uat.azmirilias.com
+Environment=VULNDECK_BASE_URL=https://vulndeck.azmirilias.com
 Environment=VULNDECK_TMPDIR=/root/vulndeck/data/tmp
 ExecStart=/root/vulndeck/.venv/bin/python -m app.main 8090
 Restart=always
