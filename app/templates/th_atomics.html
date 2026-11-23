@@ -1,0 +1,27 @@
+{% set active = 'atom' %}
+{% extends "shell.html" %}
+{% block content %}
+<section class="page-head">
+  <p class="crumb"><a href="/">Home</a> / <a href="/th">Threat Hunting</a> / Atomic Tests</p>
+  <h1>Atomic Tests</h1>
+  <p class="lede">Atomic Red Team tests to confirm a rule actually fires before it ships.</p>
+</section>
+
+{% include "_huntnav.html" %}
+
+<table class="table">
+  <thead><tr><th>Technique</th><th>Name</th><th class="num">Tests</th><th>Path</th></tr></thead>
+  <tbody>
+    {% for r in rows %}
+    <tr>
+      <td class="mono">{{ r.technique_id }}</td>
+      <td class="main-link">{{ r.name or '—' }}</td>
+      <td class="num">{{ r.test_count }}</td>
+      <td class="mono dim">{{ r.path }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="4" class="dim">No atomic tests ingested yet.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

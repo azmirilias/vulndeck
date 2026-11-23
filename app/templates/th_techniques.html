@@ -1,0 +1,29 @@
+{% set active = 'tech' %}
+{% extends "shell.html" %}
+{% block content %}
+<section class="page-head">
+  <p class="crumb"><a href="/">Home</a> / <a href="/th">Threat Hunting</a> / Techniques</p>
+  <h1>ATT&amp;CK Techniques</h1>
+  <p class="lede">MITRE ATT&amp;CK mapped to what you can already detect with Sigma and Atomic tests.</p>
+</section>
+
+{% include "_huntnav.html" %}
+
+<table class="table">
+  <thead><tr><th>ID</th><th>Technique</th><th>Tactic</th><th>Platforms</th><th class="num">Sigma</th><th class="num">Atomic</th></tr></thead>
+  <tbody>
+    {% for r in rows %}
+    <tr>
+      <td class="mono">{{ r.id }}</td>
+      <td class="main-link">{{ r.name }}</td>
+      <td class="dim">{{ r.tactics or '—' }}</td>
+      <td class="dim">{{ r.platforms or '—' }}</td>
+      <td class="num">{{ r.nrules }}</td>
+      <td class="num">{{ r.natomic }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="6" class="dim">No techniques ingested yet.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

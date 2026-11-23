@@ -1,0 +1,8 @@
+<nav class="subnav" aria-label="Hunt sections">
+  <a href="/th"{% if active == 'dash' %} class="on"{% endif %}>Dashboard</a>
+  <a href="/th/rules"{% if active == 'rules' %} class="on"{% endif %}>Sigma Rules</a>
+  <a href="/th/techniques"{% if active == 'tech' %} class="on"{% endif %}>Techniques</a>
+  <a href="/th/atomics"{% if active == 'atom' %} class="on"{% endif %}>Atomic Tests</a>
+  <a href="/th/ioc"{% if active == 'ioc' %} class="on"{% endif %}>IOC Lookup</a>
+  <a href="/th/hunts"{% if active == 'hunts' %} class="on"{% endif %}>Hunt Book</a>
+</nav>

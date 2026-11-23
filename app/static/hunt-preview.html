@@ -1,0 +1,413 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Threat Intel + Hunting — VulnDeck</title>
+<link rel="stylesheet" href="/static/style.css">
+<style>
+  /* VulnDeck workbench — TI + TH in one Operate surface. */
+  :root {
+    --side: #f1efe8;
+    --side-line: #e0ded4;
+    --row-hover: #f5f4ee;
+    --sel: #ffffff;
+    --crit-bg: #f7d9db; --crit-ink: #7a1d20;
+    --high-bg: #f9e3cd; --high-ink: #7a3d08;
+    --med-bg:  #f5ebc6; --med-ink:  #6e5700;
+    --low-bg:  #d8eae4; --low-ink:  #0c5a50;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --side: #171a1f;
+      --side-line: #262a30;
+      --row-hover: #181c21;
+      --sel: #1b1f25;
+      --crit-bg: #3a1f22; --crit-ink: #f2a3a8;
+      --high-bg: #3a2a1a; --high-ink: #f0b878;
+      --med-bg:  #332c16; --med-ink:  #e0c95c;
+      --low-bg:  #12302a; --low-ink:  #7fd6c5;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--sans); font-size: 15px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+  a { color: var(--ink); text-decoration: none; } a:hover { color: var(--accent); }
+
+  .app { display: grid; grid-template-columns: 236px 1fr; min-height: 100vh; }
+
+  .side { background: var(--side); border-right: 1px solid var(--side-line); padding: 1.25rem 1rem; display: flex; flex-direction: column; gap: .35rem; position: sticky; top: 0; height: 100vh; overflow: auto; }
+  .brand { display: flex; align-items: center; gap: .6rem; padding: 0 .5rem .9rem; }
+  .brand svg { flex: none; }
+  .brand .t { font-weight: 650; letter-spacing: -.01em; }
+  .brand .sub { display: block; font-size: .72rem; color: var(--muted); }
+
+  .nav { display: flex; flex-direction: column; gap: 1px; }
+  .nav .cap { font-size: .66rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: .95rem .55rem .3rem; }
+  .nav button { display: flex; align-items: center; gap: .6rem; width: 100%; font: inherit; font-size: .88rem; font-weight: 520; text-align: left; color: var(--ink-2); background: transparent; border: 0; border-radius: 7px; padding: .44rem .55rem; cursor: pointer; }
+  .nav button svg { flex: none; opacity: .7; }
+  .nav button:hover { background: var(--row-hover); color: var(--ink); }
+  .nav button.on { background: var(--sel); color: var(--ink); box-shadow: inset 0 0 0 1px var(--side-line); }
+  .nav button.on svg { opacity: 1; stroke: var(--accent); }
+  .side .foot { margin-top: auto; font-size: .71rem; color: var(--muted); padding: 1rem .55rem 0; line-height: 1.5; border-top: 1px solid var(--side-line); }
+
+  .main { min-width: 0; display: flex; flex-direction: column; }
+  .topbar { display: flex; align-items: center; gap: 1rem; padding: .85rem 1.5rem; border-bottom: 1px solid var(--rule); position: sticky; top: 0; background: var(--paper); z-index: 5; }
+  .topbar h1 { font-size: 1.05rem; font-weight: 640; margin: 0; letter-spacing: -.01em; }
+  .topbar .search { margin-left: auto; display: flex; align-items: center; gap: .5rem; }
+  .topbar input { font: inherit; font-size: .88rem; padding: .45rem .7rem; border: 1px solid var(--rule); border-radius: 7px; background: var(--surface); color: var(--ink); min-width: 240px; }
+  .topbar input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  kbd { font-family: var(--mono); font-size: .7rem; color: var(--muted); border: 1px solid var(--rule); border-bottom-width: 2px; border-radius: 4px; padding: .05rem .35rem; }
+
+  .content { padding: 1.5rem; max-width: 1160px; width: 100%; }
+  .panel { display: none; } .panel.on { display: block; }
+  .lead { color: var(--ink-2); max-width: 64ch; margin: 0 0 1.25rem; }
+
+  .strip { display: flex; flex-wrap: wrap; border: 1px solid var(--rule); border-radius: 9px; overflow: hidden; margin-bottom: 1.5rem; }
+  .strip .item { flex: 1 1 140px; padding: .9rem 1.1rem; border-left: 1px solid var(--rule); }
+  .strip .item:first-child { border-left: 0; }
+  .strip .v { font-size: 1.3rem; font-weight: 640; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+  .strip .l { font-size: .74rem; color: var(--muted); letter-spacing: .03em; text-transform: uppercase; }
+
+  .section { margin-bottom: 1.6rem; }
+  .section > h2 { font-size: .82rem; font-weight: 640; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 0 0 .6rem; }
+
+  .table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--rule); border-radius: 9px; overflow: hidden; }
+  .table th { text-align: left; font-size: .7rem; font-weight: 620; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); padding: .58rem .85rem; border-bottom: 1px solid var(--rule); background: var(--side); }
+  .table td { padding: .58rem .85rem; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  .table tbody tr:last-child td { border-bottom: 0; }
+  .table tbody tr:hover { background: var(--row-hover); }
+  .table .num { font-variant-numeric: tabular-nums; }
+  .mono { font-family: var(--mono); font-size: .82rem; }
+  .dim { color: var(--muted); }
+  .main-link { font-weight: 560; }
+  .cell-t { max-width: 420px; }
+
+  .badge { display: inline-block; font-size: .72rem; font-weight: 600; line-height: 1; padding: .28rem .5rem; border-radius: 4px; white-space: nowrap; }
+  .b-crit { background: var(--crit-bg); color: var(--crit-ink); }
+  .b-high { background: var(--high-bg); color: var(--high-ink); }
+  .b-med  { background: var(--med-bg);  color: var(--med-ink);  }
+  .b-low  { background: var(--low-bg);  color: var(--low-ink);  }
+  .b-neutral { background: var(--code-bg); color: var(--ink-2); }
+
+  .chips { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: 1rem; }
+  .chip { font: inherit; font-size: .8rem; font-weight: 540; padding: .3rem .75rem; border: 1px solid var(--rule); border-radius: 999px; background: var(--surface); color: var(--ink-2); cursor: pointer; }
+  .chip:hover { border-color: var(--rule-2); color: var(--ink); }
+  .chip.on { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+
+  .lookup { display: flex; gap: .5rem; max-width: 640px; margin-bottom: 1.25rem; }
+  .lookup input { flex: 1; font: inherit; padding: .7rem .85rem; border: 1px solid var(--rule); border-radius: 8px; background: var(--surface); color: var(--ink); }
+  .lookup input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  .btn { font: inherit; font-size: .9rem; font-weight: 600; padding: .7rem 1.1rem; border: 0; border-radius: 8px; background: var(--ink); color: var(--paper); cursor: pointer; }
+  .btn:hover { background: var(--accent); } .btn:active { background: var(--accent-hover); }
+
+  .ioc-result { border: 1px solid var(--rule); border-radius: 9px; overflow: hidden; background: var(--surface); max-width: 640px; }
+  .ioc-result .head { display: flex; align-items: baseline; gap: .6rem; padding: .75rem 1rem; background: var(--side); border-bottom: 1px solid var(--rule); }
+  .ioc-result .head .v { font-family: var(--mono); font-size: .95rem; font-weight: 600; }
+  .ioc-result .head .t { font-size: .74rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  .ioc-result dl { margin: 0; padding: .4rem 0; }
+  .ioc-result .row { display: grid; grid-template-columns: 140px 1fr; gap: 1rem; padding: .52rem 1rem; border-bottom: 1px solid var(--rule); }
+  .ioc-result .row:last-child { border-bottom: 0; }
+  .ioc-result dt { font-size: .8rem; color: var(--ink-2); font-weight: 560; }
+  .ioc-result dd { margin: 0; font-size: .88rem; }
+  .ioc-result .note { padding: .6rem 1rem; font-size: .76rem; color: var(--muted); border-top: 1px solid var(--rule); }
+
+  .coverage { max-width: 640px; margin-bottom: 1.5rem; }
+  .coverage .row { display: flex; justify-content: space-between; font-size: .82rem; margin-bottom: .35rem; }
+  .coverage .bar { height: 7px; background: var(--code-bg); border-radius: 99px; overflow: hidden; }
+  .coverage .bar > i { display: block; height: 100%; background: var(--teal); border-radius: 99px; }
+
+  @media (max-width: 720px) {
+    .app { grid-template-columns: 1fr; }
+    .side { position: static; height: auto; flex-direction: column; border-right: 0; border-bottom: 1px solid var(--side-line); }
+    .side .nav { flex-direction: row; flex-wrap: wrap; }
+    .side .nav .cap, .side .foot { display: none; }
+    .topbar input { min-width: 0; width: 100%; }
+    .topbar { flex-wrap: wrap; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <aside class="side">
+    <div class="brand">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 17V7l7 5.5L19 7v10"/></svg>
+      <div><span class="t">VulnDeck</span><span class="sub">Threat Intel + Hunting</span></div>
+    </div>
+
+    <nav class="nav" aria-label="Sections">
+      <span class="cap">Threat Intelligence</span>
+      <button data-p="kev"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6z"/></svg>Exploited</button>
+      <button data-p="vendors"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14"/></svg>Vendors</button>
+      <button data-p="advisories"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v12H4zM8 20h8M12 16v4"/></svg>Advisories</button>
+      <button data-p="intel"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v18M6 3a9 9 0 0 1 18 0"/><path d="M6 11a9 9 0 0 1 18 0"/><path d="M6 19a9 9 0 0 1 18 0"/></svg>Intel</button>
+      <button data-p="ransomware"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4v5c0 4-3 7-8 9-5-2-8-5-8-9V7z"/><path d="M12 9v4M10.5 12h3"/></svg>Ransomware</button>
+      <button data-p="breaches"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M12 3l-4 4M12 3l4 4M4 9h16M4 9v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9"/></svg>Breaches</button>
+      <button data-p="actors"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>Actors</button>
+      <button data-p="malware"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4v5c0 4-3 7-8 9-5-2-8-5-8-9V7z"/></svg>Malware</button>
+
+      <span class="cap">Threat Hunting</span>
+      <button class="on" data-p="dash"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Hunt Dashboard</button>
+      <button data-p="rules"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6M10 3v5l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3"/></svg>Sigma Rules</button>
+      <button data-p="tech"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>Techniques</button>
+      <button data-p="atom"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6M10 3v5.5L4.5 17a2 2 0 0 0 1.7 3h11.6a2 2 0 0 0 1.7-3L14 8.5V3"/></svg>Atomic Tests</button>
+      <button data-p="ioc"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>IOC Lookup</button>
+      <button data-p="hunts"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15.5H6.5A2.5 2.5 0 0 0 4 21z"/><path d="M4 18.5A2.5 2.5 0 0 1 6.5 16H20"/></svg>Hunt Book</button>
+    </nav>
+
+    <div class="foot">KEV · EPSS · OSV · RSS refreshed daily<br>Sigma · ATT&amp;CK · Atomics refreshed daily<br>IOC enrichment cached 24h</div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <h1 id="page-title">Threat Hunting</h1>
+      <div class="search">
+        <input type="search" placeholder="Search CVEs, rules, techniques, IOCs…" aria-label="Search">
+        <kbd>/</kbd>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- ============ THREAT INTELLIGENCE ============ -->
+      <section class="panel" id="kev">
+        <p class="lead">Known exploited vulnerabilities, cross-referenced with EPSS.</p>
+        <table class="table">
+          <thead><tr><th>CVE</th><th>Vendor · product</th><th>Added</th><th class="num">EPSS</th><th>Ransomware</th></tr></thead>
+          <tbody>
+            <tr><td class="mono main-link">CVE-2026-131651</td><td>rtMedia · WordPress plugin</td><td class="dim">Nov 2026</td><td class="num">0.0621</td><td><span class="dim">—</span></td></tr>
+            <tr><td class="mono main-link">CVE-2026-19793</td><td>WP Import Export Lite · WordPress</td><td class="dim">Nov 2026</td><td class="num">0.0843</td><td><span class="dim">—</span></td></tr>
+            <tr><td class="mono main-link">CVE-2021-44228</td><td>Apache · Log4j2</td><td class="dim">Dec 2021</td><td class="num">0.9754</td><td><span class="badge b-high">known</span></td></tr>
+            <tr><td class="mono main-link">CVE-2023-23397</td><td>Microsoft · Outlook</td><td class="dim">Mar 2023</td><td class="num">0.9612</td><td><span class="dim">—</span></td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="panel" id="vendors">
+        <p class="lead">Exploited-CVE history per vendor.</p>
+        <table class="table">
+          <thead><tr><th>Vendor</th><th class="num">CVEs</th><th class="num">Ransomware</th><th>Latest</th></tr></thead>
+          <tbody>
+            <tr><td class="main-link">Microsoft</td><td class="num">312</td><td class="num">41</td><td class="dim">Nov 2026</td></tr>
+            <tr><td class="main-link">Apple</td><td class="num">86</td><td class="num">6</td><td class="dim">Oct 2026</td></tr>
+            <tr><td class="main-link">Apache</td><td class="num">74</td><td class="num">12</td><td class="dim">Sep 2026</td></tr>
+            <tr><td class="main-link">Cisco</td><td class="num">68</td><td class="num">9</td><td class="dim">Nov 2026</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="panel" id="advisories">
+        <p class="lead">Open-source package advisories with CVE mapping and severity.</p>
+        <div class="chips"><span class="chip on">All</span><span class="chip">critical</span><span class="chip">high</span><span class="chip">moderate</span><span class="chip">low</span></div>
+        <table class="table">
+          <thead><tr><th>Advisory</th><th>Severity</th><th class="num">CVSS</th><th>Ecosystem</th></tr></thead>
+          <tbody>
+            <tr><td class="main-link cell-t">Log4Shell in log4j-core (CVE-2021-44228)</td><td><span class="badge b-crit">critical</span></td><td class="num">10.0</td><td class="dim">Maven</td></tr>
+            <tr><td class="main-link cell-t">Prototype pollution in lodash</td><td><span class="badge b-high">high</span></td><td class="num">7.5</td><td class="dim">npm</td></tr>
+            <tr><td class="main-link cell-t">Open redirect in Django</td><td><span class="badge b-med">moderate</span></td><td class="num">5.4</td><td class="dim">PyPI</td></tr>
+            <tr><td class="main-link cell-t">ReDoS in highlight.js</td><td><span class="badge b-med">moderate</span></td><td class="num">4.3</td><td class="dim">npm</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="panel" id="intel">
+        <p class="lead">Headlines from primary research teams — titles and links only.</p>
+        <table class="table">
+          <thead><tr><th>Source</th><th>Headline</th><th>Date</th></tr></thead>
+          <tbody>
+            <tr><td class="dim">Unit 42</td><td class="main-link cell-t">New ransomware group targets exposed RDP with double extortion</td><td class="dim">Nov 21</td></tr>
+            <tr><td class="dim">Cisco Talos</td><td class="main-link cell-t">Actor abuses Windows Installer to evade detection</td><td class="dim">Nov 20</td></tr>
+            <tr><td class="dim">Securelist</td><td class="main-link cell-t">Financially motivated campaign uses signed drivers</td><td class="dim">Nov 19</td></tr>
+            <tr><td class="dim">The DFIR Report</td><td class="main-link cell-t">IcedID to Cobalt Strike intrusion walkthrough</td><td class="dim">Nov 18</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="panel" id="ransomware">
+        <p class="lead">Recent victim disclosures from public leak sites — reported, not verified.</p>
+        <table class="table">
+          <thead><tr><th>Group</th><th>Victim</th><th>Sector</th><th>Discovered</th></tr></thead>
+          <tbody>
+            <tr><td class="main-link">Aurora</td><td>TraWell Co S.p.A. (Safe Bag)</td><td class="dim">retail</td><td class="dim">Nov 21</td></tr>
+            <tr><td class="main-link">LockBit</td><td>Regional healthcare network</td><td class="dim">healthcare</td><td class="dim">Nov 20</td></tr>
+            <tr><td class="main-link">BlackCat</td><td>Logistics provider</td><td class="dim">transport</td><td class="dim">Nov 19</td></tr>
+            <tr><td class="main-link">Akira</td><td>Municipal government</td><td class="dim">government</td><td class="dim">Nov 18</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="panel" id="breaches">
+        <p class="lead">Public breach metadata — name, domain, date and record counts.</p>
+        <table class="table">
+          <thead><tr><th>Breach</th><th>Domain</th><th>Date</th><th class="num">Records</th><th>Data classes</th></tr></thead>
+          <tbody>
+            <tr><td class="main-link">000webhost</td><td class="mono">000webhost.com</td><td class="dim">Mar 2015</td><td class="num">14,936,670</td><td class="dim">Email · IP · Passwords</td></tr>
+            <tr><td class="main-link">123RF</td><td class="mono">123rf.com</td><td class="dim">Mar 2020</td><td class="num">8,661,578</td><td class="dim">Email · Passwords</td></tr>
+            <tr><td class="main-link">Adobe</td><td class="mono">adobe.com</td><td class="dim">Oct 2013</td><td class="num">152,445,165</td><td class="dim">Email · Passwords · Hints</td></tr>
+            <tr><td class="main-link">Canva</td><td class="mono">canva.com</td><td class="dim">May 2019</td><td class="num">137,272,116</td><td class="dim">Email · Names · Hashes</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="panel" id="actors">
+        <p class="lead">Threat actor profiles from MISP Galaxy.</p>
+        <table class="table">
+          <thead><tr><th>Actor</th><th>Country</th><th>Motivation</th><th>Aliases</th></tr></thead>
+          <tbody>
+            <tr><td class="main-link">APT1</td><td class="mono">CN</td><td class="dim">Espionage</td><td class="dim">Comment Crew · ShadyRAT</td></tr>
+            <tr><td class="main-link">FIN7</td><td class="mono">RU</td><td class="dim">Financial</td><td class="dim">Carbanak · Navigator</td></tr>
+            <tr><td class="main-link">APT29</td><td class="mono">RU</td><td class="dim">Espionage</td><td class="dim">Cozy Bear · The Dukes</td></tr>
+            <tr><td class="main-link">Lazarus</td><td class="mono">KP</td><td class="dim">Espionage · Financial</td><td class="dim">Hidden Cobra</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="panel" id="malware">
+        <p class="lead">Malware families and tools.</p>
+        <table class="table">
+          <thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td class="main-link">Cobalt Strike</td><td class="dim">C2 framework</td><td class="dim cell-t">Commercial adversary simulation and C2</td></tr>
+            <tr><td class="main-link">TrickBot</td><td class="dim">Banking trojan</td><td class="dim cell-t">Modular malware with delivery and lateral movement</td></tr>
+            <tr><td class="main-link">Mimikatz</td><td class="dim">Credential tool</td><td class="dim cell-t">Extracts plaintext passwords, hashes, Kerberos tickets</td></tr>
+            <tr><td class="main-link">AsyncRAT</td><td class="dim">RAT</td><td class="dim cell-t">Remote access trojan with keylogging</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- ============ THREAT HUNTING ============ -->
+      <section class="panel on" id="dash">
+        <p class="lead">Detection coverage, the Sigma catalogue and atomic tests that prove it — in one workbench.</p>
+        <div class="strip">
+          <div class="item"><div class="v">4,182</div><div class="l">Sigma rules</div></div>
+          <div class="item"><div class="v">624</div><div class="l">Techniques</div></div>
+          <div class="item"><div class="v">1,462</div><div class="l">Atomic tests</div></div>
+          <div class="item"><div class="v">71%</div><div class="l">Coverage</div></div>
+        </div>
+        <div class="coverage">
+          <div class="row"><span>Detection coverage</span><span class="dim">71% of techniques have ≥1 Sigma rule</span></div>
+          <div class="bar"><i style="width:71%"></i></div>
+        </div>
+        <div class="section">
+          <h2>Techniques tanpa rule</h2>
+          <div class="chips">
+            <span class="chip">T1059 Command &amp; Scripting Interpreter</span>
+            <span class="chip">T1569 System Services</span>
+            <span class="chip">T1219 Remote Access Software</span>
+            <span class="chip">T1071 Application Layer Protocol</span>
+            <span class="chip">T1027 Obfuscated Files</span>
+          </div>
+        </div>
+        <div class="section">
+          <h2>Latest rules</h2>
+          <table class="table">
+            <thead><tr><th>Rule</th><th>Level</th><th>Logsource</th><th>Technique</th><th>Status</th></tr></thead>
+            <tbody>
+              <tr><td class="main-link">Suspicious LSASS Access via Task Scheduler</td><td><span class="badge b-crit">critical</span></td><td class="mono">windows</td><td class="mono">T1003.001</td><td class="dim">stable</td></tr>
+              <tr><td class="main-link">PowerShell Encoded Command Execution</td><td><span class="badge b-high">high</span></td><td class="mono">powershell</td><td class="mono">T1059.001</td><td class="dim">stable</td></tr>
+              <tr><td class="main-link">Kerberoasting — RC4 Ticket Request</td><td><span class="badge b-high">high</span></td><td class="mono">windows</td><td class="mono">T1558.003</td><td class="dim">experimental</td></tr>
+              <tr><td class="main-link">Net.exe Local Admin Group Modification</td><td><span class="badge b-med">medium</span></td><td class="mono">windows</td><td class="mono">T1078</td><td class="dim">stable</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel" id="rules">
+        <p class="lead">Searchable catalogue of detection logic. Filter by level, logsource or technique.</p>
+        <div class="chips"><span class="chip on">All</span><span class="chip">critical</span><span class="chip">high</span><span class="chip">medium</span><span class="chip">windows</span><span class="chip">linux</span><span class="chip">dns</span></div>
+        <table class="table">
+          <thead><tr><th>Rule</th><th>Level</th><th>Logsource</th><th>Technique</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td class="main-link">Suspicious LSASS Access via Task Scheduler</td><td><span class="badge b-crit">critical</span></td><td class="mono">windows</td><td class="mono">T1003.001</td><td class="dim">stable</td></tr>
+            <tr><td class="main-link">PowerShell Encoded Command Execution</td><td><span class="badge b-high">high</span></td><td class="mono">powershell</td><td class="mono">T1059.001</td><td class="dim">stable</td></tr>
+            <tr><td class="main-link">Kerberoasting — RC4 Ticket Request</td><td><span class="badge b-high">high</span></td><td class="mono">windows</td><td class="mono">T1558.003</td><td class="dim">experimental</td></tr>
+            <tr><td class="main-link">Net.exe Local Admin Group Modification</td><td><span class="badge b-med">medium</span></td><td class="mono">windows</td><td class="mono">T1078</td><td class="dim">stable</td></tr>
+            <tr><td class="main-link">Suspicious DNS Query for C2 Domain</td><td><span class="badge b-high">high</span></td><td class="mono">dns</td><td class="mono">T1071.004</td><td class="dim">stable</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="panel" id="tech">
+        <p class="lead">MITRE ATT&amp;CK, mapped to what you can already detect.</p>
+        <div class="chips"><span class="chip on">All</span><span class="chip">Execution</span><span class="chip">Persistence</span><span class="chip">Privilege Escalation</span><span class="chip">Credential Access</span><span class="chip">Lateral Movement</span><span class="chip">C2</span></div>
+        <table class="table">
+          <thead><tr><th>ID</th><th>Technique</th><th>Tactic</th><th>Platforms</th><th class="num">Sigma</th><th class="num">Atomic</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">T1003</td><td class="main-link">OS Credential Dumping</td><td class="dim">credential-access</td><td class="dim">Win · Linux · macOS</td><td class="num">64</td><td class="num">18</td></tr>
+            <tr><td class="mono">T1059</td><td class="main-link">Command &amp; Scripting Interpreter</td><td class="dim">execution</td><td class="dim">Win · Linux · macOS</td><td class="num">112</td><td class="num">31</td></tr>
+            <tr><td class="mono">T1558</td><td class="main-link">Steal or Forge Kerberos Tickets</td><td class="dim">credential-access</td><td class="dim">Windows</td><td class="num">47</td><td class="num">12</td></tr>
+            <tr><td class="mono">T1071</td><td class="main-link">Application Layer Protocol</td><td class="dim">command-and-control</td><td class="dim">Win · Linux · macOS</td><td class="num">38</td><td class="num">0</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="panel" id="atom">
+        <p class="lead">Atomic Red Team tests to confirm a rule actually fires before it ships.</p>
+        <table class="table">
+          <thead><tr><th>Technique</th><th>Name</th><th class="num">Tests</th><th>Path</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">T1003.001</td><td class="main-link">OS Credential Dumping: LSASS Memory</td><td class="num">18</td><td class="mono dim">T1003.001/T1003.001.yaml</td></tr>
+            <tr><td class="mono">T1059.001</td><td class="main-link">PowerShell</td><td class="num">31</td><td class="mono dim">T1059.001/T1059.001.yaml</td></tr>
+            <tr><td class="mono">T1558.003</td><td class="main-link">Kerberoasting</td><td class="num">12</td><td class="mono dim">T1558.003/T1558.003.yaml</td></tr>
+            <tr><td class="mono">T1547.001</td><td class="main-link">Registry Run Keys</td><td class="num">9</td><td class="mono dim">T1547.001/T1547.001.yaml</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="panel" id="ioc">
+        <p class="lead">Enrich an indicator across VirusTotal, abuse.ch and OTX. Cached 24h.</p>
+        <div class="lookup">
+          <input type="search" placeholder="hash / domain / IP — e.g. 8.8.8.8" aria-label="Indicator">
+          <button class="btn">Enrich</button>
+        </div>
+        <div class="ioc-result">
+          <div class="head"><span class="v">8.8.8.8</span><span class="t">IP address</span></div>
+          <dl>
+            <div class="row"><dt>VirusTotal</dt><dd>301 harmless · 60 malicious · AS15169 Google</dd></div>
+            <div class="row"><dt>ThreatFox</dt><dd>no hits</dd></div>
+            <div class="row"><dt>MalwareBazaar</dt><dd>no samples</dd></div>
+            <div class="row"><dt>OTX</dt><dd>3 pulses · 0 malware</dd></div>
+            <div class="row"><dt>URLhaus</dt><dd>0 URLs reported</dd></div>
+          </dl>
+          <p class="note">Sources are labelled individually — this is context, not a verdict.</p>
+        </div>
+      </section>
+
+      <section class="panel" id="hunts">
+        <p class="lead">Hypotheses you are actively testing, with the data source that would prove each one.</p>
+        <table class="table">
+          <thead><tr><th>Hypothesis</th><th>Technique</th><th>Data source</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td class="main-link">Encoded PowerShell used for C2 staging</td><td class="mono">T1059.001</td><td class="dim">Sysmon EID 1 · PowerShell logs</td><td><span class="badge b-neutral">open</span></td></tr>
+            <tr><td class="main-link">Kerberoasting spike precedes lateral movement</td><td class="mono">T1558.003</td><td class="dim">Win Event 4769</td><td><span class="badge b-low">validated</span></td></tr>
+            <tr><td class="main-link">DNS beaconing to newly-registered domains</td><td class="mono">T1071.004</td><td class="dim">DNS query logs</td><td><span class="badge b-neutral">open</span></td></tr>
+          </tbody>
+        </table>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  var TITLES = { kev:'Exploited Vulnerabilities', vendors:'Vendors', advisories:'Advisories', intel:'Threat Intel Feed', ransomware:'Ransomware Victims', breaches:'Data Breaches', actors:'Threat Actors', malware:'Malware & Tools', dash:'Threat Hunting', rules:'Sigma Rules', tech:'ATT&CK Techniques', atom:'Atomic Tests', ioc:'IOC Lookup', hunts:'Hunt Book' };
+  var btns = document.querySelectorAll('.nav button[data-p]');
+  function show(id){
+    document.querySelectorAll('.panel').forEach(function(p){ p.classList.toggle('on', p.id === id); });
+    btns.forEach(function(b){ b.classList.toggle('on', b.dataset.p === id); });
+    document.getElementById('page-title').textContent = TITLES[id] || 'Threat Hunting';
+  }
+  btns.forEach(function(b){ b.addEventListener('click', function(){ show(b.dataset.p); }); });
+  document.querySelectorAll('.chips').forEach(function(c){
+    c.querySelectorAll('.chip').forEach(function(ch){
+      ch.addEventListener('click', function(){
+        c.querySelectorAll('.chip').forEach(function(x){ x.classList.remove('on'); });
+        ch.classList.add('on');
+      });
+    });
+  });
+</script>
+</body>
+</html>

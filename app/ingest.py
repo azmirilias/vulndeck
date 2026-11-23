@@ -28,6 +28,7 @@ from urllib.parse import urlsplit
 import httpx
 
 from . import db
+from . import hunt_ingest
 
 UA = "VulnDeck/1.0 (+https://vulndeck.azmirilias.com; security research aggregator)"
 TIMEOUT = httpx.Timeout(60.0, connect=15.0)
@@ -652,6 +653,9 @@ JOBS = [
     ("misp-galaxy", ingest_galaxy),
     ("poc-trending", ingest_poc),
     ("article-iocs", ingest_iocs),
+    ("hunt-sigma", hunt_ingest.ingest_sigma),
+    ("hunt-attack", hunt_ingest.ingest_attack),
+    ("hunt-atomics", hunt_ingest.ingest_atomics),
 ]
 
 
@@ -660,7 +664,11 @@ def run(only: str | None = None) -> int:
     failures = 0
     with httpx.Client(timeout=TIMEOUT, headers={"User-Agent": UA}, follow_redirects=True) as client:
         for name, fn in JOBS:
-            if only and only != name:
+            if only == "ti" and name.startswith("hunt-"):
+                continue
+            if only == "hunt" and not name.startswith("hunt-"):
+                continue
+            if only and only not in ("ti", "hunt") and only != name:
                 continue
             started = datetime.now(timezone.utc)
             try:

@@ -1,0 +1,27 @@
+{% set active = 'hunts' %}
+{% extends "shell.html" %}
+{% block content %}
+<section class="page-head">
+  <p class="crumb"><a href="/">Home</a> / <a href="/th">Threat Hunting</a> / Hunt Book</p>
+  <h1>Hunt Book</h1>
+  <p class="lede">Hypotheses you are actively testing, with the data source that would prove each one.</p>
+</section>
+
+{% include "_huntnav.html" %}
+
+<table class="table">
+  <thead><tr><th>Hypothesis</th><th>Technique</th><th>Data source</th><th>Status</th></tr></thead>
+  <tbody>
+    {% for r in rows %}
+    <tr>
+      <td class="main-link">{{ r.title }}</td>
+      <td class="mono">{{ r.technique_id or '—' }}</td>
+      <td class="dim">{{ r.data_sources or '—' }}</td>
+      <td><span class="badge {{ 'b-low' if r.status == 'validated' else 'b-neutral' }}">{{ r.status }}</span></td>
+    </tr>
+    {% else %}
+    <tr><td colspan="4" class="dim">No hunts tracked yet.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

@@ -1,0 +1,36 @@
+{% set active = 'rules' %}
+{% extends "shell.html" %}
+{% block content %}
+<section class="page-head">
+  <p class="crumb"><a href="/">Home</a> / <a href="/th">Threat Hunting</a> / Sigma Rules</p>
+  <h1>Sigma Rules</h1>
+  <p class="lede">Searchable catalogue of detection logic. Filter by level, logsource or technique.</p>
+</section>
+
+{% include "_huntnav.html" %}
+
+<div class="chips">
+  <a class="chip{% if not level and not qterm %} on{% endif %}" href="/th/rules">All</a>
+  {% for l in ['critical','high','medium','low'] %}
+  <a class="chip{% if level == l %} on{% endif %}" href="/th/rules?level={{ l }}">{{ l }}</a>
+  {% endfor %}
+</div>
+
+<table class="table">
+  <thead><tr><th>Rule</th><th>Level</th><th>Logsource</th><th>Technique</th><th>Status</th></tr></thead>
+  <tbody>
+    {% for r in rows %}
+    {% set c = {'critical':'b-crit','high':'b-high','medium':'b-med','low':'b-low'}.get(r.level,'b-neutral') %}
+    <tr>
+      <td class="main-link">{{ r.title }}</td>
+      <td><span class="badge {{ c }}">{{ r.level or 'info' }}</span></td>
+      <td class="mono">{{ r.logsource | getlog or '—' }}</td>
+      <td class="mono">{{ (r.techniques or '').split(',')[0] if r.techniques else '—' }}</td>
+      <td class="dim">{{ r.status or '—' }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="5" class="dim">No rules match.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

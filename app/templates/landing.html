@@ -1,0 +1,42 @@
+{% extends "shell.html" %}
+{% block content %}
+<section class="hero">
+  <span class="tag">DevSecOps security intelligence</span>
+  <h1>Know what is exploited. Prove you can detect it.</h1>
+  <p class="lede">VulnDeck pairs live threat intelligence with a detection workbench — one surface for understanding the threat and validating your defences against it.</p>
+  <p class="meta">
+    <span><b>{{ '{:,}'.format(stats.kev) }}</b> exploited CVEs</span>
+    <span><b>{{ '{:,}'.format(stats.advisories) }}</b> advisories</span>
+    <span><b>{{ '{:,}'.format(stats.hunt_rules) }}</b> Sigma rules</span>
+    <span><b>{{ '{:,}'.format(stats.hunt_techniques) }}</b> ATT&amp;CK techniques</span>
+  </p>
+</section>
+
+<section class="features">
+  <a class="feature" href="/ti">
+    <span class="mark"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6z"/></svg></span>
+    <h2>Threat Intelligence</h2>
+    <p class="tagline">What is being exploited right now — and how likely everything else is.</p>
+    <ul>
+      <li>CISA KEV + EPSS exploit probability</li>
+      <li>OSV package advisories with CVSS</li>
+      <li>Vendor dossiers &amp; research intel feed</li>
+      <li>Ransomware, breach, actor &amp; malware reference</li>
+    </ul>
+    <span class="go">Open Threat Intelligence →</span>
+  </a>
+
+  <a class="feature th" href="/th">
+    <span class="mark"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></span>
+    <h2>Threat Hunting</h2>
+    <p class="tagline">Turn detections into proof — search Sigma, map ATT&amp;CK, validate with atomics.</p>
+    <ul>
+      <li>Sigma rule catalogue, filterable</li>
+      <li>MITRE ATT&amp;CK coverage map</li>
+      <li>Atomic Red Team validation tests</li>
+      <li>IOC enrichment (VT · abuse.ch · OTX)</li>
+    </ul>
+    <span class="go">Open Threat Hunting →</span>
+  </a>
+</section>
+{% endblock %}

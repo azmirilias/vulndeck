@@ -141,6 +141,65 @@ CREATE TABLE IF NOT EXISTS article_ioc (
 );
 CREATE INDEX IF NOT EXISTS idx_aioc_value ON article_ioc(ioc_value);
 
+CREATE TABLE IF NOT EXISTS hunt_rule (
+    id          TEXT PRIMARY KEY,
+    title       TEXT NOT NULL,
+    description TEXT,
+    status      TEXT,
+    level       TEXT,
+    logsource   TEXT,
+    detection   TEXT,
+    tags        TEXT,
+    author      TEXT,
+    date        TEXT,
+    refs        TEXT,
+    techniques  TEXT,
+    path        TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_hr_level ON hunt_rule(level);
+CREATE INDEX IF NOT EXISTS idx_hr_title ON hunt_rule(title);
+
+CREATE TABLE IF NOT EXISTS hunt_technique (
+    id          TEXT PRIMARY KEY,
+    name        TEXT NOT NULL,
+    description TEXT,
+    tactics     TEXT,
+    platforms   TEXT,
+    url         TEXT,
+    deprecated  INTEGER DEFAULT 0,
+    is_sub      INTEGER DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_ht_name ON hunt_technique(name);
+
+CREATE TABLE IF NOT EXISTS hunt_atomic (
+    technique_id TEXT PRIMARY KEY,
+    name         TEXT,
+    path         TEXT,
+    yaml         TEXT,
+    test_count   INTEGER DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS hunt_ioc_cache (
+    ioc       TEXT NOT NULL,
+    ioc_type  TEXT NOT NULL,
+    source    TEXT NOT NULL,
+    result    TEXT,
+    ts        TEXT,
+    expiry    TEXT,
+    PRIMARY KEY (ioc, ioc_type, source)
+);
+
+CREATE TABLE IF NOT EXISTS hunt_hypothesis (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    title        TEXT NOT NULL,
+    hypothesis   TEXT,
+    technique_id TEXT,
+    data_sources TEXT,
+    status       TEXT DEFAULT 'open',
+    created      TEXT,
+    notes        TEXT
+);
+
 CREATE TABLE IF NOT EXISTS ingest_log (
     id        INTEGER PRIMARY KEY AUTOINCREMENT,
     ts        TEXT,
@@ -233,6 +292,9 @@ COUNTS_SQL = {
     "actors": "SELECT COUNT(*) c FROM actor",
     "malware": "SELECT COUNT(*) c FROM malware",
     "pocs": "SELECT COUNT(*) c FROM poc",
+    "hunt_rules": "SELECT COUNT(*) c FROM hunt_rule",
+    "hunt_techniques": "SELECT COUNT(*) c FROM hunt_technique WHERE deprecated=0",
+    "hunt_atomics": "SELECT COUNT(*) c FROM hunt_atomic",
 }
 
 

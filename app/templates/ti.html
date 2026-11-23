@@ -1,0 +1,19 @@
+{% extends "shell.html" %}
+{% block content %}
+<section class="page-head">
+  <p class="crumb"><a href="/">Home</a> / Threat Intelligence</p>
+  <h1>Threat Intelligence</h1>
+  <p class="lede">What is being exploited right now, how likely the rest is to be exploited, and which open-source dependency is affected — merged from free, public sources.</p>
+</section>
+
+<section class="mods">
+  <a class="mod" href="/kev"><p class="name">Exploited Vulnerabilities</p><p class="desc">CISA KEV catalog cross-referenced with EPSS exploit probability.</p><span class="count">{{ '{:,}'.format(stats.kev) }} CVEs</span></a>
+  <a class="mod" href="/vendors"><p class="name">Vendors</p><p class="desc">Exploited-CVE history per vendor, ranked and indexable.</p><span class="count">{{ '{:,}'.format(stats.vendors) }} vendors</span></a>
+  <a class="mod" href="/advisories"><p class="name">Advisories</p><p class="desc">Open-source package advisories with CVE mapping and CVSS.</p><span class="count">{{ '{:,}'.format(stats.advisories) }} records</span></a>
+  <a class="mod" href="/intel"><p class="name">Intel Feed</p><p class="desc">Headlines from CISA, Unit 42, Talos, Securelist, ESET, DFIR Report and more.</p><span class="count">{{ '{:,}'.format(stats.articles) }} articles</span></a>
+  <a class="mod" href="/ransomware"><p class="name">Ransomware</p><p class="desc">Victim disclosures from public leak sites, labelled unverified.</p><span class="count">{{ '{:,}'.format(stats.ransomware) }} victims</span></a>
+  <a class="mod" href="/breaches"><p class="name">Breaches</p><p class="desc">Public breach metadata — domain, date, record counts, data classes.</p><span class="count">{{ '{:,}'.format(stats.breaches) }} breaches</span></a>
+  <a class="mod" href="/actors"><p class="name">Threat Actors</p><p class="desc">Profiles from MISP Galaxy with aliases, country and motivation.</p><span class="count">{{ '{:,}'.format(stats.actors) }} actors</span></a>
+  <a class="mod" href="/malware"><p class="name">Malware &amp; Tools</p><p class="desc">Families and tools with descriptions and references.</p><span class="count">{{ '{:,}'.format(stats.malware) }} entries</span></a>
+</section>
+{% endblock %}

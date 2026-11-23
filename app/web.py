@@ -4,7 +4,7 @@ from __future__ import annotations
 import re
 import threading
 import time
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from email.utils import formatdate
 from html import escape
 
@@ -14,6 +14,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from . import config, db
+from . import hunt_ingest
 
 app = FastAPI(title=config.SITE_NAME, docs_url=None, redoc_url=None, openapi_url=None)
 app.mount("/static", StaticFiles(directory=str(config.ROOT / "app" / "static")), name="static")
@@ -53,7 +54,15 @@ def sev_class(value: str | None) -> str:
 
 
 import json as _json
-templates.env.filters.update(human_date=human_date, pct=pct, slug=slug, sev_class=sev_class, fromjson=lambda s: _json.loads(s) if s else [])
+def _getlog(s: str) -> str:
+    try:
+        d = _json.loads(s) if s else {}
+    except Exception:
+        return ""
+    if isinstance(d, dict):
+        return str(d.get("product") or d.get("category") or d.get("service") or "")
+    return ""
+templates.env.filters.update(human_date=human_date, pct=pct, slug=slug, sev_class=sev_class, fromjson=lambda s: _json.loads(s) if s else [], getlog=_getlog)
 templates.env.globals.update(
     SITE=config,
     NAV=config.NAV,
@@ -196,17 +205,8 @@ def _article_summary(row: dict, request: Request) -> tuple[str, bool]:
 
 # -------------------------------------------------------------------- pages
 @app.get("/", response_class=HTMLResponse)
-def home(request: Request):
-    stats = db.counts()
-    latest = q(
-        "SELECT k.*, e.score FROM kev k LEFT JOIN epss e ON e.cve_id=k.cve_id "
-        "ORDER BY k.date_added DESC, k.cve_id DESC LIMIT 8"
-    )
-    hot = q(
-        "SELECT k.cve_id, k.vendor, k.product, k.name, k.ransomware_use, e.score, e.percentile "
-        "FROM kev k JOIN epss e ON e.cve_id=k.cve_id ORDER BY e.score DESC LIMIT 6"
-    )
-    intel = q("SELECT * FROM article ORDER BY published DESC LIMIT 6")
+def landing(request: Request):
+    s = db.counts()
     ld = json_ld(
         {
             "@context": "https://schema.org",
@@ -214,11 +214,6 @@ def home(request: Request):
             "name": config.SITE_NAME,
             "url": config.BASE_URL,
             "description": config.SITE_DESC,
-            "potentialAction": {
-                "@type": "SearchAction",
-                "target": f"{config.BASE_URL}/search?q={{search_term_string}}",
-                "query-input": "required name=search_term_string",
-            },
         },
         {
             "@context": "https://schema.org",
@@ -229,10 +224,28 @@ def home(request: Request):
         },
     )
     return render(
-        request, "home.html", stats=stats, latest=latest, hot=hot, intel=intel,
-        last_ingest=db.get_meta("last_ingest", "pending"), ld=ld,
+        request, "landing.html", stats=s, ld=ld,
         title=f"{config.SITE_NAME} — {config.SITE_TAGLINE}",
         description=config.SITE_DESC,
+    )
+
+
+@app.get("/ti", response_class=HTMLResponse)
+def ti_home(request: Request):
+    stats = db.counts()
+    ld = json_ld(
+        {
+            "@context": "https://schema.org",
+            "@type": "CollectionPage",
+            "name": "Threat Intelligence",
+            "url": f"{config.BASE_URL}/ti",
+            "isPartOf": {"@type": "WebSite", "name": config.SITE_NAME, "url": config.BASE_URL},
+        }
+    )
+    return render(
+        request, "ti.html", stats=stats, ld=ld,
+        title=f"Threat Intelligence — {config.SITE_NAME}",
+        description="Exploited vulnerabilities, advisories, intel feed, ransomware, breaches, actors and malware — from free public sources.",
     )
 
 
@@ -620,6 +633,153 @@ def search(request: Request, term: str = Query("", alias="q")):
     )
 
 
+# ------------------------------------------------------------- Threat Hunting
+def _ioc_type(value: str) -> str:
+    import ipaddress
+    v = (value or "").strip().lower()
+    if re.fullmatch(r"[a-f0-9]{32}|[a-f0-9]{40}|[a-f0-9]{64}", v):
+        return "hash"
+    try:
+        ipaddress.ip_address(v)
+        return "ip"
+    except ValueError:
+        pass
+    if v.startswith(("http://", "https://")):
+        return "url"
+    if re.fullmatch(r"(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}", v):
+        return "domain"
+    return "keyword"
+
+
+def _hunt_coverage() -> tuple[int, list[dict]]:
+    techs = q("SELECT id, name FROM hunt_technique WHERE deprecated=0 AND is_sub=0")
+    refs: set[str] = set()
+    for r in q("SELECT techniques FROM hunt_rule WHERE techniques != ''"):
+        for t in (r["techniques"] or "").split(","):
+            t = t.strip()
+            if t:
+                refs.add(t)
+    covered = [t for t in techs if t["id"] in refs or any(x.startswith(t["id"] + ".") for x in refs)]
+    pct = round(100 * len(covered) / len(techs)) if techs else 0
+    gap = [t for t in techs if t not in covered][:8]
+    return pct, gap
+
+
+def _rule_counts() -> dict[str, int]:
+    cnt: dict[str, int] = {}
+    for r in q("SELECT techniques FROM hunt_rule WHERE techniques != ''"):
+        for t in (r["techniques"] or "").split(","):
+            t = t.strip()
+            if t:
+                cnt[t] = cnt.get(t, 0) + 1
+    return cnt
+
+
+def _atomic_map() -> dict[str, int]:
+    return {r["technique_id"]: r["test_count"] for r in q("SELECT technique_id, test_count FROM hunt_atomic")}
+
+
+def _ioc_cached(ioc: str, ioc_type: str) -> dict:
+    import json as _j
+    now = datetime.now(timezone.utc)
+    rows = q("SELECT source, result, expiry FROM hunt_ioc_cache WHERE ioc=? AND ioc_type=?", (ioc, ioc_type))
+    fresh: dict = {}
+    for r in rows:
+        if r["expiry"] and r["expiry"] > now.isoformat():
+            try:
+                fresh[r["source"]] = _j.loads(r["result"])
+            except Exception:
+                pass
+    if rows and fresh and len(fresh) == len(rows):
+        return fresh
+    data = hunt_ingest.ioc_lookup(ioc, ioc_type)
+    expiry = (now + timedelta(hours=24)).isoformat()
+    ts = now.isoformat()
+    if data:
+        with db.WRITE_LOCK, db.connect(write=True) as conn:
+            for src, val in data.items():
+                conn.execute(
+                    "INSERT INTO hunt_ioc_cache(ioc,ioc_type,source,result,ts,expiry) VALUES(?,?,?,?,?,?) "
+                    "ON CONFLICT(ioc,ioc_type,source) DO UPDATE SET result=excluded.result, ts=excluded.ts, expiry=excluded.expiry",
+                    (ioc, ioc_type, src, _j.dumps(val, ensure_ascii=False), ts, expiry),
+                )
+    return data
+
+
+@app.get("/th", response_class=HTMLResponse)
+def hunt_dashboard(request: Request):
+    stats = db.counts()
+    coverage_pct, gap = _hunt_coverage()
+    latest_rules = q(
+        "SELECT title, level, status, logsource, techniques FROM hunt_rule ORDER BY date DESC, title LIMIT 8"
+    )
+    return render(request, "th.html", stats=stats, coverage_pct=coverage_pct, gap=gap, latest_rules=latest_rules,
+                  title=f"Threat Hunting — {config.SITE_NAME}",
+                  description="Sigma rule catalogue, MITRE ATT&CK coverage and Atomic Red Team validation.")
+
+
+@app.get("/th/rules", response_class=HTMLResponse)
+def hunt_rules(request: Request, level: str = "", qterm: str = Query("", alias="q")):
+    where, params = ["1=1"], []
+    if level:
+        where.append("level=?")
+        params.append(level)
+    if qterm:
+        like = f"%{qterm.strip()[:120]}%"
+        where.append("(title LIKE ? OR description LIKE ? OR techniques LIKE ?)")
+        params += [like, like, like]
+    clause = " AND ".join(where)
+    rows = q(f"SELECT title, level, status, logsource, techniques, date FROM hunt_rule WHERE {clause} ORDER BY date DESC, title LIMIT 200", tuple(params))
+    return render(request, "th_rules.html", rows=rows, level=level, qterm=qterm,
+                  title=f"Sigma Rules — {config.SITE_NAME}",
+                  description="Searchable catalogue of Sigma detection rules.")
+
+
+@app.get("/th/techniques", response_class=HTMLResponse)
+def hunt_techniques(request: Request):
+    rows = q("SELECT id, name, tactics, platforms FROM hunt_technique WHERE deprecated=0 AND is_sub=0 ORDER BY id LIMIT 400")
+    rc = _rule_counts()
+    am = _atomic_map()
+    for r in rows:
+        tid = r["id"]
+        r["nrules"] = sum(v for k, v in rc.items() if k == tid or k.startswith(tid + "."))
+        r["natomic"] = am.get(tid, 0) + sum(v for k, v in am.items() if k.startswith(tid + "."))
+    return render(request, "th_techniques.html", rows=rows,
+                  title=f"ATT&CK Techniques — {config.SITE_NAME}",
+                  description="MITRE ATT&CK techniques mapped to Sigma rules and Atomic tests.")
+
+
+@app.get("/th/atomics", response_class=HTMLResponse)
+def hunt_atomics(request: Request):
+    rows = q("SELECT technique_id, name, path, test_count FROM hunt_atomic ORDER BY technique_id LIMIT 400")
+    return render(request, "th_atomics.html", rows=rows,
+                  title=f"Atomic Tests — {config.SITE_NAME}",
+                  description="Atomic Red Team tests for validating detection rules.")
+
+
+@app.get("/th/ioc", response_class=HTMLResponse)
+def hunt_ioc(request: Request, ioc: str = Query("")):
+    ioc = (ioc or "").strip()[:200]
+    result, ioc_type = {}, ""
+    if ioc:
+        ioc_type = _ioc_type(ioc)
+        if ioc_type == "keyword":
+            result = {"unrecognised": {"error": "Not a recognised hash, domain, IP or URL"}}
+        else:
+            result = _ioc_cached(ioc, ioc_type)
+    return render(request, "th_ioc.html", ioc=ioc, ioc_type=ioc_type, result=result,
+                  title=f"IOC Lookup — {config.SITE_NAME}",
+                  description="Enrich an indicator across VirusTotal, abuse.ch and OTX.")
+
+
+@app.get("/th/hunts", response_class=HTMLResponse)
+def hunt_hunts(request: Request):
+    rows = q("SELECT title, hypothesis, technique_id, data_sources, status FROM hunt_hypothesis ORDER BY id DESC LIMIT 100")
+    return render(request, "th_hunts.html", rows=rows,
+                  title=f"Hunt Book — {config.SITE_NAME}",
+                  description="Hypotheses under active testing with their proving data source.")
+
+
 # ------------------------------------------------------------- SEO surfaces
 @app.get("/robots.txt", response_class=PlainTextResponse)
 def robots():
@@ -651,7 +811,7 @@ def sitemap_index():
 
 
 def sitemap_groups() -> list[tuple[str, list[str]]]:
-    static = ["", "/kev", "/vendors", "/advisories", "/intel", "/ransomware", "/breaches", "/actors", "/malware", "/today", "/sources", "/about"]
+    static = ["", "/ti", "/th", "/th/rules", "/th/techniques", "/th/atomics", "/th/ioc", "/th/hunts", "/kev", "/vendors", "/advisories", "/intel", "/ransomware", "/breaches", "/actors", "/malware", "/today", "/sources", "/about"]
     cves = [r["cve_id"] for r in q("SELECT cve_id FROM kev ORDER BY cve_id")]
     vendors = [slug(r["vendor"]) for r in q("SELECT DISTINCT vendor FROM kev")]
     actors = [r["slug"] for r in q("SELECT slug FROM actor ORDER BY slug")]

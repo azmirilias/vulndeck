@@ -1,0 +1,45 @@
+{% set active = 'ioc' %}
+{% extends "shell.html" %}
+{% block content %}
+<section class="page-head">
+  <p class="crumb"><a href="/">Home</a> / <a href="/th">Threat Hunting</a> / IOC Lookup</p>
+  <h1>IOC Lookup</h1>
+  <p class="lede">Enrich an indicator across VirusTotal, abuse.ch and OTX. Cached 24h.</p>
+</section>
+
+{% include "_huntnav.html" %}
+
+<form class="lookup" action="/th/ioc" method="get">
+  <input type="search" name="ioc" placeholder="hash / domain / IP — e.g. 8.8.8.8" value="{{ ioc or '' }}" aria-label="Indicator">
+  <button class="btn" type="submit">Enrich</button>
+</form>
+
+{% if result %}
+<div class="ioc-result">
+  <div class="head"><span class="v">{{ ioc }}</span><span class="t">{{ ioc_type }}</span></div>
+  <dl>
+    {% for source, data in result.items() %}
+    <div class="row">
+      <dt>{{ source }}</dt>
+      <dd>
+        {% if data.error %}
+        <span class="dim">error {{ data.error }}</span>
+        {% elif source == 'virustotal' %}
+          {{ data.votes.harmless if data.votes else 0 }} harmless · {{ data.votes.malicious if data.votes else 0 }} malicious{% if data.asn %} · {{ data.asn }}{% endif %}
+        {% elif source == 'threatfox' %}
+          {{ data.status }}{% if data.count %} · {{ data.count }} hits{% endif %}
+        {% elif source == 'urlhaus' %}
+          {{ data.status }}{% if data.url_count %} · {{ data.url_count }} URLs{% endif %}
+        {% elif source == 'otx' %}
+          {{ data.pulse_count }} pulses · {{ data.malware_count }} malware
+        {% else %}
+          {{ data }}
+        {% endif %}
+      </dd>
+    </div>
+    {% endfor %}
+  </dl>
+  <p class="note">Sources are labelled individually — this is context, not a verdict.</p>
+</div>
+{% endif %}
+{% endblock %}
