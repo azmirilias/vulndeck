@@ -72,6 +72,23 @@ tests/            smoke tests against a temporary database
 
 Full detail and exclusions: `/sources` in the app, and [PROVENANCE.md](PROVENANCE.md).
 
+## Optional API keys
+
+IOC enrichment (Threat Hunting → IOC Lookup) and the PoC index run without any key, but
+a key turns each source on. Copy `.env.example` to `.env` (mode 600) and fill in only
+what you need; `vulndeck.service` loads it via `EnvironmentFile`. Sources without a key
+are skipped gracefully — the rest of the site keeps running.
+
+| Variable | Service | Enables | Notes |
+|---|---|---|---|
+| `VT_KEY` | VirusTotal | IP / domain reputation in IOC Lookup | free account has a daily quota |
+| `ABUSE_CH_KEY` | abuse.ch | ThreatFox, MalwareBazaar, URLhaus lookups | free Auth-Key from abuse.ch |
+| `OTX_KEY` | AlienVault OTX | pulses + malware count for IP / domain / URL | free key from OTX |
+| `SHODAN_KEY` | Shodan | (optional) | free `oss` plan reports 0 query credits |
+| `GITHUB_TOKEN` | GitHub | higher PoC-search rate limit | anonymous = 60 req/h |
+
+Never commit `.env` — it is already in `.gitignore`. Only `.env.example` is tracked.
+
 ## Production deployment
 
 Production hostname: `https://xxxx.xxxxx.com`.
